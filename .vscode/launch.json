@@ -1,0 +1,51 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Mobile App (Debug)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/mobile"
+    },
+    {
+      "name": "Mobile App (Profile)",
+      "type": "dart", 
+      "request": "launch",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/mobile",
+      "flutterMode": "profile"
+    },
+    {
+      "name": "Admin Panel (Web - Port 53130)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/admin",
+      "deviceId": "chrome",
+      "args": [
+        "--web-port=53130",
+        "--web-hostname=localhost"
+      ]
+    },
+    {
+      "name": "Admin Panel (Edge - Port 53130)",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main.dart",
+      "cwd": "${workspaceFolder}/admin",
+      "deviceId": "edge",
+      "args": [
+        "--web-port=53130",
+        "--web-hostname=localhost"
+      ]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack (Backend + Admin)",
+      "configurations": ["Admin Panel (Web - Port 53130)"]
+    }
+  ]
+}
+
