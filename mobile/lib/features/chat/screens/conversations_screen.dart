@@ -1,29 +1,46 @@
-// ignore_for_file: unused_field
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../config/theme.dart';
 import '../../../config/routes.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/network/api_endpoints.dart';
+import '../../../data/models/conversation_model.dart';
 import '../../../data/providers/auth_provider.dart';
+import '../../../data/providers/chat_provider.dart';
 
-class ConversationsScreen extends ConsumerWidget {
+/// Conversations list screen
+class ConversationsScreen extends ConsumerStatefulWidget {
   const ConversationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ConversationsScreen> createState() =>
+      _ConversationsScreenState();
+}
+
+class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(conversationsProvider.notifier).loadConversations();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isLoggedIn = ref.watch(isAuthenticatedProvider);
     final l10n = context.l10n;
 
     if (!isLoggedIn) {
-      return _buildLoginPrompt(context);
+      return _buildLoginPrompt(context, l10n);
     }
 
-    // TODO: Replace with actual conversations data
-    final conversations = <_ConversationItem>[];
-    final isEmpty = conversations.isEmpty;
+    final conversationsState = ref.watch(conversationsProvider);
+    final currentUser = ref.watch(currentUserProvider);
+    final isRtl = context.isRtl;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -31,26 +48,71 @@ class ConversationsScreen extends ConsumerWidget {
         title: Text(l10n.tr('conversations.title')),
         actions: [
           IconButton(
-            onPressed: () {
-              // TODO: Search conversations
-            },
-            icon: const Icon(Icons.search_rounded),
+            onPressed: () =>
+                ref.read(conversationsProvider.notifier).loadConversations(),
+            icon: const Icon(Icons.refresh_rounded),
           ),
         ],
       ),
-      body: isEmpty
-          ? _buildEmptyState(context)
-          : _buildConversationsList(context, conversations),
+      body: _buildBody(conversationsState, currentUser?.id ?? 0, isRtl, l10n),
     );
   }
 
-  Widget _buildLoginPrompt(BuildContext context) {
-    final l10n = context.l10n;
+  Widget _buildBody(
+    ConversationsState state,
+    int currentUserId,
+    bool isRtl,
+    AppLocalizations l10n,
+  ) {
+    if (state.isLoading && state.conversations.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state.error != null && state.conversations.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+            const SizedBox(height: 16),
+            Text(state.error!),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () =>
+                  ref.read(conversationsProvider.notifier).loadConversations(),
+              child: Text(l10n.tr('retry')),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (state.conversations.isEmpty) {
+      return _buildEmptyState(context, l10n);
+    }
+
+    return RefreshIndicator(
+      onRefresh: () =>
+          ref.read(conversationsProvider.notifier).loadConversations(),
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: state.conversations.length,
+        itemBuilder: (context, index) {
+          return _buildConversationTile(
+            context,
+            state.conversations[index],
+            currentUserId,
+            isRtl,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildLoginPrompt(BuildContext context, AppLocalizations l10n) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(l10n.tr('conversations.title')),
-      ),
+      appBar: AppBar(title: Text(l10n.tr('conversations.title'))),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(40),
@@ -94,30 +156,9 @@ class ConversationsScreen extends ConsumerWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 40),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withAlpha(102),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: ElevatedButton(
-                  onPressed: () => context.push(Routes.login),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 40,
-                      vertical: 16,
-                    ),
-                  ),
-                  child: Text(l10n.tr('login')),
-                ),
+              FilledButton(
+                onPressed: () => context.push(Routes.login),
+                child: Text(l10n.tr('login')),
               ),
             ],
           ),
@@ -126,8 +167,7 @@ class ConversationsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    final l10n = context.l10n;
+  Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(40),
@@ -172,9 +212,7 @@ class ConversationsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 40),
             OutlinedButton.icon(
-              onPressed: () {
-                // Navigate to home/search
-              },
+              onPressed: () => context.go(Routes.home),
               icon: const Icon(Icons.explore_rounded),
               label: Text(l10n.tr('browseProducts')),
             ),
@@ -184,42 +222,39 @@ class ConversationsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildConversationsList(
-    BuildContext context,
-    List<_ConversationItem> conversations,
-  ) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: conversations.length,
-      itemBuilder: (context, index) {
-        return _buildConversationTile(context, conversations[index]);
-      },
-    );
-  }
-
   Widget _buildConversationTile(
     BuildContext context,
-    _ConversationItem conversation,
+    Conversation conversation,
+    int currentUserId,
+    bool isRtl,
   ) {
+    final isCustomer = conversation.customerId == currentUserId;
+    final displayName = isCustomer
+        ? conversation.project?.getLocalizedName(isRtl ? 'ar' : 'en') ??
+            'Unknown'
+        : conversation.customer?.fullName ?? 'Unknown';
+    final avatarUrl = isCustomer
+        ? conversation.project?.logoUrl
+        : conversation.customer?.avatarUrl;
+    final hasUnread = conversation.unreadCount > 0;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: conversation.hasUnread
-            ? AppColors.primary.withAlpha(13)
-            : AppColors.surface,
+        color: hasUnread ? AppColors.primary.withAlpha(13) : AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: conversation.hasUnread
+        border: hasUnread
             ? Border.all(color: AppColors.primary.withAlpha(51))
             : null,
       ),
       child: ListTile(
         onTap: () {
-          // TODO: Navigate to chat
+          context.push(
+            Routes.chat
+                .replaceFirst(':conversationId', conversation.id.toString()),
+          );
         },
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 8,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Stack(
           children: [
             Container(
@@ -229,12 +264,15 @@ class ConversationsScreen extends ConsumerWidget {
                 gradient: AppColors.secondaryGradient,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: conversation.projectImage != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.network(
-                        conversation.projectImage!,
-                        fit: BoxFit.cover,
+              clipBehavior: Clip.antiAlias,
+              child: avatarUrl != null
+                  ? CachedNetworkImage(
+                      imageUrl: ApiEndpoints.imageUrl(avatarUrl),
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => const Icon(
+                        Icons.storefront_rounded,
+                        color: Colors.white,
+                        size: 26,
                       ),
                     )
                   : const Icon(
@@ -243,34 +281,15 @@ class ConversationsScreen extends ConsumerWidget {
                       size: 26,
                     ),
             ),
-            if (conversation.isOnline)
-              Positioned(
-                bottom: 2,
-                right: 2,
-                child: Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: AppColors.success,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.surface,
-                      width: 2,
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
         title: Row(
           children: [
             Expanded(
               child: Text(
-                conversation.projectName,
+                displayName,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: conversation.hasUnread
-                          ? FontWeight.bold
-                          : FontWeight.w600,
+                      fontWeight: hasUnread ? FontWeight.bold : FontWeight.w600,
                     ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -278,14 +297,12 @@ class ConversationsScreen extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              conversation.timeAgo,
+              _formatTimeAgo(
+                  conversation.lastMessageAt ?? conversation.createdAt, isRtl),
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: conversation.hasUnread
-                        ? AppColors.primary
-                        : AppColors.textTertiary,
-                    fontWeight: conversation.hasUnread
-                        ? FontWeight.bold
-                        : FontWeight.normal,
+                    color:
+                        hasUnread ? AppColors.primary : AppColors.textTertiary,
+                    fontWeight: hasUnread ? FontWeight.bold : FontWeight.normal,
                   ),
             ),
           ],
@@ -296,14 +313,15 @@ class ConversationsScreen extends ConsumerWidget {
             children: [
               Expanded(
                 child: Text(
-                  conversation.lastMessage,
+                  conversation.lastMessage
+                          ?.getLocalizedPreview(isRtl ? 'ar' : 'en') ??
+                      '',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: conversation.hasUnread
+                        color: hasUnread
                             ? AppColors.textPrimary
                             : AppColors.textSecondary,
-                        fontWeight: conversation.hasUnread
-                            ? FontWeight.w500
-                            : FontWeight.normal,
+                        fontWeight:
+                            hasUnread ? FontWeight.w500 : FontWeight.normal,
                       ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -312,10 +330,8 @@ class ConversationsScreen extends ConsumerWidget {
               if (conversation.unreadCount > 0) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     gradient: AppColors.primaryGradient,
                     borderRadius: BorderRadius.circular(12),
@@ -336,29 +352,23 @@ class ConversationsScreen extends ConsumerWidget {
       ),
     );
   }
-}
 
-// Temporary data class - parameters will be used when real data is connected
-class _ConversationItem {
-  final String id;
-  final String projectId;
-  final String projectName;
-  final String? projectImage;
-  final String lastMessage;
-  final String timeAgo;
-  final bool hasUnread;
-  final int unreadCount;
-  final bool isOnline;
+  String _formatTimeAgo(DateTime date, bool isRtl) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
 
-  _ConversationItem({
-    required this.id,
-    required this.projectId,
-    required this.projectName,
-    this.projectImage,
-    required this.lastMessage,
-    required this.timeAgo,
-    this.hasUnread = false,
-    this.unreadCount = 0,
-    this.isOnline = false,
-  });
+    if (diff.inMinutes < 1) {
+      return isRtl ? 'الآن' : 'now';
+    }
+    if (diff.inMinutes < 60) {
+      return isRtl ? '${diff.inMinutes}د' : '${diff.inMinutes}m';
+    }
+    if (diff.inHours < 24) {
+      return isRtl ? '${diff.inHours}س' : '${diff.inHours}h';
+    }
+    if (diff.inDays < 7) {
+      return isRtl ? '${diff.inDays}ي' : '${diff.inDays}d';
+    }
+    return '${date.day}/${date.month}';
+  }
 }

@@ -75,6 +75,7 @@ class AppColors {
 
   // Other
   static const Color divider = Color(0xFFE8E0D8);
+  static const Color border = Color(0xFFE8E0D8);
   static const Color shadow = Color(0x1A2D2520);
   static const Color shimmer = Color(0xFFE8E0D8);
   static const Color shimmerHighlight = Color(0xFFF8F4EE);

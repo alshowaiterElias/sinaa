@@ -4,11 +4,17 @@ import 'package:go_router/go_router.dart';
 
 import '../../../config/theme.dart';
 import '../../../config/routes.dart';
+import '../../../core/network/api_endpoints.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../data/models/category.dart';
+import '../../../data/models/product_model.dart';
 import '../../../data/providers/auth_provider.dart';
 import '../../../data/providers/categories_provider.dart';
 import '../../../data/providers/projects_provider.dart';
+import '../../../data/providers/products_provider.dart';
+import '../../../data/providers/notifications_provider.dart';
+import '../../../data/providers/chat_provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../projects/widgets/project_card.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -22,10 +28,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Load categories when the home screen is initialized
+    // Load categories, projects, products, and notification count when the home screen is initialized
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(categoriesStateProvider.notifier).loadCategories();
       ref.read(projectsStateProvider.notifier).loadProjects();
+      ref.read(featuredProductsProvider.notifier).loadFeaturedProducts();
+      ref.read(notificationsProvider.notifier).loadUnreadCount();
+      debugPrint(
+          '[HOME] Loaded categories, projects, featured products, and notification count');
     });
   }
 
@@ -36,14 +46,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final projectsState = ref.watch(projectsStateProvider);
     final l10n = context.l10n;
 
+    // Initialize socket and notification listeners when logged in
+    ref.watch(socketInitProvider);
+    ref.watch(notificationInitProvider);
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
           // Custom App Bar
           SliverAppBar(
-            expandedHeight: 140,
-            floating: true,
-            pinned: true,
+            expandedHeight: 160,
+            floating: false,
             backgroundColor: AppColors.background,
             surfaceTintColor: Colors.transparent,
             flexibleSpace: FlexibleSpaceBar(
@@ -149,6 +162,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildNotificationButton(BuildContext context) {
+    final unreadCount = ref.watch(unreadNotificationsCountProvider);
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -156,9 +171,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         boxShadow: AppTheme.softShadow,
       ),
       child: IconButton(
-        onPressed: () {},
+        onPressed: () => context.push('/notifications'),
         icon: Badge(
-          smallSize: 8,
+          label: unreadCount > 0
+              ? Text(unreadCount > 99 ? '99+' : '$unreadCount')
+              : null,
+          isLabelVisible: unreadCount > 0,
           backgroundColor: AppColors.primary,
           child: const Icon(
             Icons.notifications_outlined,
@@ -442,13 +460,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return GestureDetector(
       onTap: () {
-        // TODO: Navigate to category products screen
-        // context.push('/categories/${category.id}/products');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                '${l10n.tr('browsing')} ${category.getLocalizedName(l10n.locale.languageCode)}'),
-            duration: const Duration(seconds: 1),
+        context.push(
+          Routes.categoryProducts.replaceFirst(
+            ':categoryId',
+            category.id.toString(),
           ),
         );
       },
@@ -464,13 +479,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    color.withOpacity(0.15),
-                    color.withOpacity(0.05),
+                    color.withAlpha(38), // 0.15
+                    color.withAlpha(13), // 0.05
                   ],
                 ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: color.withOpacity(0.2),
+                  color: color.withAlpha(51), // 0.2
                   width: 1.5,
                 ),
               ),
@@ -514,13 +529,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.textTertiary.withOpacity(0.15),
-                    AppColors.textTertiary.withOpacity(0.05),
+                    AppColors.textTertiary.withAlpha(38), // 0.15
+                    AppColors.textTertiary.withAlpha(13), // 0.05
                   ],
                 ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: AppColors.textTertiary.withOpacity(0.2),
+                  color: AppColors.textTertiary.withAlpha(51), // 0.2
                   width: 1.5,
                 ),
               ),
@@ -547,25 +562,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildFeaturedProducts(BuildContext context) {
+    final featuredProducts = ref.watch(featuredProductsProvider);
+    final l10n = context.l10n;
+    final isRtl = context.isRtl;
+
+    if (featuredProducts.isLoading && featuredProducts.products.isEmpty) {
+      return SizedBox(
+        height: 280,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: 5,
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Container(
+                width: 180,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    if (featuredProducts.products.isEmpty) {
+      return SizedBox(
+        height: 200,
+        child: Center(
+          child: Text(
+            l10n.tr('noProductsFound'),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textTertiary,
+                ),
+          ),
+        ),
+      );
+    }
+
     return SizedBox(
       height: 280,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: 5,
+        itemCount: featuredProducts.products.length,
         itemBuilder: (context, index) {
+          final product = featuredProducts.products[index];
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: _buildProductCard(context, index),
+            child: _buildProductCard(context, product, isRtl),
           );
         },
       ),
     );
   }
 
-  Widget _buildProductCard(BuildContext context, int index) {
+  Widget _buildProductCard(BuildContext context, Product product, bool isRtl) {
     return GestureDetector(
-      onTap: () {},
+      onTap: () {
+        context.push(
+          Routes.productDetail.replaceFirst(
+            ':productId',
+            product.id.toString(),
+          ),
+        );
+      },
       child: Container(
         width: 180,
         decoration: BoxDecoration(
@@ -583,22 +647,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 color: AppColors.surfaceVariant,
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(20)),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.primary.withOpacity(0.08),
-                    AppColors.surfaceVariant,
-                  ],
-                ),
               ),
               child: Stack(
                 children: [
-                  const Center(
-                    child: Icon(
-                      Icons.image_rounded,
-                      size: 48,
-                      color: AppColors.textTertiary,
+                  ClipRRect(
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(20)),
+                    child: CachedNetworkImage(
+                      imageUrl: ApiEndpoints.imageUrl(product.posterImageUrl),
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      errorWidget: (context, url, error) => const Center(
+                        child: Icon(
+                          Icons.image_rounded,
+                          size: 48,
+                          color: AppColors.textTertiary,
+                        ),
+                      ),
                     ),
                   ),
                   // Favorite button
@@ -630,7 +699,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'منتج مميز ${index + 1}',
+                    isRtl ? product.nameAr : product.name,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -640,39 +709,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 3,
+                      if (product.averageRating > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.accent.withAlpha(26),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.star_rounded,
+                                size: 14,
+                                color: AppColors.accent,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                product.averageRating.toStringAsFixed(1),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelSmall
+                                    ?.copyWith(
+                                      color: AppColors.accent,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                            ],
+                          ),
                         ),
-                        decoration: BoxDecoration(
-                          color: AppColors.accent.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.star_rounded,
-                              size: 14,
-                              color: AppColors.accent,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              '4.${index + 5}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
-                                  ?.copyWith(
-                                    color: AppColors.accent,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
                       const Spacer(),
                       Text(
-                        '${(index + 1) * 45} ر.س',
+                        '${product.basePrice.toStringAsFixed(0)} ${isRtl ? 'ر.س' : 'SAR'}',
                         style:
                             Theme.of(context).textTheme.titleMedium?.copyWith(
                                   color: AppColors.primary,
@@ -691,6 +761,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildNearbyProjects(BuildContext context, projectsState) {
+    debugPrint(
+        '[HOME] Projects state: isLoading=${projectsState.isLoading}, count=${projectsState.projects.length}, error=${projectsState.error}');
     if (projectsState.isLoading && projectsState.projects.isEmpty) {
       return const SizedBox(
         height: 200,
@@ -715,7 +787,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final projects = projectsState.projects.take(5).toList();
 
     return SizedBox(
-      height: 280, // Increased height for ProjectCard
+      height: 300, // Increased height to fix overflow
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),

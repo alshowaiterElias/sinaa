@@ -58,13 +58,15 @@ class CategoriesRepository {
       );
 
       final data = response.data['data'];
-      
+
       return CategoryProductsResponse(
-        category: CategorySummary.fromJson(data['category'] as Map<String, dynamic>),
+        category:
+            CategorySummary.fromJson(data['category'] as Map<String, dynamic>),
         products: (data['products'] as List)
             .map((p) => p as Map<String, dynamic>)
             .toList(), // Will be converted to Product model when created
-        pagination: PaginationInfo.fromJson(data['pagination'] as Map<String, dynamic>),
+        pagination:
+            PaginationInfo.fromJson(data['pagination'] as Map<String, dynamic>),
       );
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
@@ -136,9 +138,9 @@ class PaginationInfo {
 
   factory PaginationInfo.fromJson(Map<String, dynamic> json) {
     return PaginationInfo(
-      currentPage: json['currentPage'] as int? ?? 1,
+      currentPage: (json['currentPage'] ?? json['page']) as int? ?? 1,
       totalPages: json['totalPages'] as int? ?? 0,
-      totalItems: json['totalItems'] as int? ?? 0,
+      totalItems: (json['totalItems'] ?? json['total']) as int? ?? 0,
       itemsPerPage: json['itemsPerPage'] as int? ?? 20,
     );
   }
@@ -150,7 +152,8 @@ class PaginationInfo {
 /// Response for category products endpoint
 class CategoryProductsResponse {
   final CategorySummary category;
-  final List<Map<String, dynamic>> products; // Will be List<Product> when model is created
+  final List<Map<String, dynamic>>
+      products; // Will be List<Product> when model is created
   final PaginationInfo pagination;
 
   CategoryProductsResponse({
@@ -165,4 +168,3 @@ final categoriesRepositoryProvider = Provider<CategoriesRepository>((ref) {
   final dio = ref.watch(dioProvider);
   return CategoriesRepository(dio);
 });
-

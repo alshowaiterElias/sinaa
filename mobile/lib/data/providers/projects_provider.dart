@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/project_model.dart';
@@ -76,12 +77,16 @@ class ProjectsNotifier extends Notifier<ProjectsState> {
     }
 
     try {
+      debugPrint(
+          '[PROJECTS] Loading projects: page=${state.currentPage}, city=${state.cityFilter}, search=${state.searchQuery}');
       final response = await _repository.getProjects(
         page: state.currentPage,
         city: state.cityFilter,
         search: state.searchQuery,
       );
 
+      debugPrint(
+          '[PROJECTS] Got ${response.projects.length} projects, totalPages: ${response.pagination.totalPages}');
       state = state.copyWith(
         projects: refresh
             ? response.projects
@@ -92,6 +97,7 @@ class ProjectsNotifier extends Notifier<ProjectsState> {
         isInitialized: true,
       );
     } catch (e) {
+      debugPrint('[PROJECTS] Error loading projects: $e');
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),

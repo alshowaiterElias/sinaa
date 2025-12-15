@@ -47,15 +47,15 @@ class Project extends Equatable {
 
   factory Project.fromJson(Map<String, dynamic> json) {
     return Project(
-      id: json['id'] as int,
-      ownerId: json['ownerId'] as int,
-      name: json['name'] as String,
-      nameAr: json['nameAr'] as String,
+      id: json['id'] as int? ?? 0,
+      ownerId: json['ownerId'] as int? ?? 0,
+      name: json['name'] as String? ?? '',
+      nameAr: json['nameAr'] as String? ?? '',
       description: json['description'] as String?,
       descriptionAr: json['descriptionAr'] as String?,
       logoUrl: json['logoUrl'] as String?,
       coverUrl: json['coverUrl'] as String?,
-      city: json['city'] as String,
+      city: json['city'] as String? ?? '',
       latitude: json['latitude'] != null
           ? double.tryParse(json['latitude'].toString())
           : null,

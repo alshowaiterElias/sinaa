@@ -11,6 +11,7 @@ import {
     getPaginationParams,
     sendConflict,
 } from '../utils/helpers';
+import { NotificationTemplates } from '../services/notification.service';
 
 // ==================== Public/User Endpoints ====================
 
@@ -216,9 +217,21 @@ export const updateProject = async (req: Request, res: Response) => {
     delete updates.averageRating;
     delete updates.totalReviews;
 
+    // If user is updating project info (not admin), set status back to pending for re-approval
+    const isAdmin = req.user?.role === 'admin';
+    const hasContentChanges = updates.name || updates.nameAr || updates.description || updates.descriptionAr;
+
+    if (!isAdmin && hasContentChanges && project.status === PROJECT_STATUS.APPROVED) {
+        updates.status = PROJECT_STATUS.PENDING;
+    }
+
     await project.update(updates);
 
-    return sendSuccess(res, project, 'Project updated successfully');
+    const message = updates.status === PROJECT_STATUS.PENDING
+        ? 'Project updated - pending re-approval'
+        : 'Project updated successfully';
+
+    return sendSuccess(res, project, message);
 };
 
 // ==================== Admin Endpoints ====================
@@ -312,7 +325,12 @@ export const approveProject = async (req: Request, res: Response) => {
         rejectionReason: null,
     });
 
-    // TODO: Send notification to owner
+    // Send notification to owner
+    NotificationTemplates.projectApproved(
+        project.ownerId,
+        project.id,
+        project.name
+    );
 
     return sendSuccess(res, project, 'Project approved successfully');
 };
@@ -339,7 +357,13 @@ export const rejectProject = async (req: Request, res: Response) => {
         rejectionReason: reason,
     });
 
-    // TODO: Send notification to owner
+    // Send notification to owner
+    NotificationTemplates.projectRejected(
+        project.ownerId,
+        project.id,
+        project.name,
+        reason
+    );
 
     return sendSuccess(res, project, 'Project rejected successfully');
 };
@@ -370,6 +394,14 @@ export const disableProject = async (req: Request, res: Response) => {
         disableReason: reason,
     });
 
+    // Send notification to owner
+    NotificationTemplates.projectDisabled(
+        project.ownerId,
+        project.id,
+        project.name,
+        reason
+    );
+
     return sendSuccess(res, project, 'Project disabled successfully');
 };
 
@@ -393,5 +425,13 @@ export const enableProject = async (req: Request, res: Response) => {
         status: PROJECT_STATUS.APPROVED,
     });
 
+    // Send notification to owner
+    NotificationTemplates.projectEnabled(
+        project.ownerId,
+        project.id,
+        project.name
+    );
+
     return sendSuccess(res, project, 'Project enabled successfully');
 };
+

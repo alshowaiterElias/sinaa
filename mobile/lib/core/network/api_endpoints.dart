@@ -43,6 +43,31 @@ class ApiEndpoints {
     return 'https://api.sinaa.sa$_apiPath';
   }
 
+  /// Server base URL for images and uploads (without /api/v1)
+  static String get serverBaseUrl {
+    if (kIsWeb) {
+      return 'http://localhost:$_port';
+    }
+
+    if (kDebugMode) {
+      return 'http://$_lanIp:$_port';
+    }
+
+    return 'https://api.sinaa.sa';
+  }
+
+  /// Get full image URL from relative path
+  static String imageUrl(String? relativePath) {
+    if (relativePath == null || relativePath.isEmpty) {
+      return '';
+    }
+    // Already a full URL
+    if (relativePath.startsWith('http')) {
+      return relativePath;
+    }
+    return '$serverBaseUrl$relativePath';
+  }
+
   /// For debugging: print the current base URL
   static void printConfig() {
     print('═══════════════════════════════════════════════════════════');
@@ -111,6 +136,8 @@ class ApiEndpoints {
 
   // Notifications endpoints
   static const String notifications = '/notifications';
+  static const String notificationsUnreadCount = '/notifications/unread-count';
+  static String notification(int id) => '/notifications/$id';
   static String notificationRead(int id) => '/notifications/$id/read';
   static const String notificationsReadAll = '/notifications/read-all';
 

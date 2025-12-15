@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'config/theme.dart';
 import 'config/routes.dart';
 import 'core/localization/app_localizations.dart';
+import 'shared/widgets/notification_banner.dart';
 import 'data/providers/locale_provider.dart';
 
 class SinaaApp extends ConsumerWidget {
@@ -39,6 +40,13 @@ class SinaaApp extends ConsumerWidget {
 
       // Router
       routerConfig: router,
+
+      // Wrap with notification banner for in-app alerts
+      builder: (context, child) {
+        return NotificationBannerWrapper(
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 }

@@ -75,6 +75,23 @@ class ProfileScreen extends ConsumerWidget {
                   const SizedBox(height: 24),
                 ],
 
+                // Rating Requests / Transactions - available for all logged in users
+                if (isLoggedIn) ...[
+                  _buildMenuSection(
+                    context,
+                    l10n.isRtl ? 'طلبات التقييم' : 'Rating Requests',
+                    [
+                      _MenuItem(
+                        icon: Icons.star_rate_rounded,
+                        label:
+                            l10n.isRtl ? 'طلبات التقييم' : 'My Rating Requests',
+                        onTap: () => context.push(Routes.transactions),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
                 _buildMenuSection(
                   context,
                   l10n.tr('settings'),
@@ -148,7 +165,7 @@ class ProfileScreen extends ConsumerWidget {
                     _MenuItem(
                       icon: Icons.help_outline_rounded,
                       label: l10n.tr('helpCenter'),
-                      onTap: () {},
+                      onTap: () => context.push(Routes.supportTickets),
                     ),
                     _MenuItem(
                       icon: Icons.chat_bubble_outline_rounded,

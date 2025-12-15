@@ -1,4 +1,5 @@
 import express, { Application } from 'express';
+import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -6,15 +7,20 @@ import dotenv from 'dotenv';
 
 import { connectDatabase } from './config/database';
 import { API_PREFIX } from './config/constants';
+import { initializeSocket } from './config/socket';
 import routes from './routes';
 import { notFoundHandler, errorHandler } from './middleware/errorHandler';
 import logger from './utils/logger';
+import { startAutoConfirmScheduler } from './jobs/autoConfirmScheduler';
 
 // Load environment variables
 dotenv.config();
 
 // Create Express app
 const app: Application = express();
+
+// Create HTTP server for Socket.io
+const httpServer = createServer(app);
 
 // Middleware
 app.use(helmet());
@@ -67,13 +73,17 @@ const startServer = async (): Promise<void> => {
     // Connect to database
     await connectDatabase();
 
+    // Initialize Socket.io
+    const io = initializeSocket(httpServer);
+
     // Start listening on all interfaces (important for mobile device testing)
-    app.listen(PORT, HOST, () => {
+    httpServer.listen(PORT, HOST, () => {
       logger.info('═══════════════════════════════════════════════════════════');
       logger.info(`🚀 Server running on port ${PORT}`);
       logger.info(`📚 API available at:`);
       logger.info(`   - Local:   http://localhost:${PORT}${API_PREFIX}`);
       logger.info(`   - Network: http://<YOUR_IP>:${PORT}${API_PREFIX}`);
+      logger.info(`🔌 WebSocket ready for connections`);
       logger.info(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
       logger.info('═══════════════════════════════════════════════════════════');
       logger.info('💡 For mobile device testing:');
@@ -81,6 +91,9 @@ const startServer = async (): Promise<void> => {
       logger.info('   2. Make sure phone is on same WiFi');
       logger.info('   3. Allow port 3000 through firewall');
       logger.info('═══════════════════════════════════════════════════════════');
+
+      // Start background jobs
+      startAutoConfirmScheduler();
     });
   } catch (error) {
     logger.error('Failed to start server:', error);

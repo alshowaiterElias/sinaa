@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/theme.dart';
+import '../../../config/routes.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../data/models/category.dart';
 import '../../../data/providers/categories_provider.dart';
+import 'package:go_router/go_router.dart';
 
 class AllCategoriesScreen extends ConsumerStatefulWidget {
   const AllCategoriesScreen({super.key});
 
   @override
-  ConsumerState<AllCategoriesScreen> createState() => _AllCategoriesScreenState();
+  ConsumerState<AllCategoriesScreen> createState() =>
+      _AllCategoriesScreenState();
 }
 
 class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen>
@@ -64,7 +67,7 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen>
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.arrow_back_ios_new_rounded, 
+                child: const Icon(Icons.arrow_back_ios_new_rounded,
                     color: Colors.white, size: 18),
               ),
               onPressed: () => Navigator.pop(context),
@@ -153,7 +156,8 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen>
                 opacity: _fadeAnimation,
                 child: Container(
                   margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(20),
@@ -206,7 +210,8 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen>
             ),
 
           // Error state
-          if (categoriesState.error != null && categoriesState.categories.isEmpty)
+          if (categoriesState.error != null &&
+              categoriesState.categories.isEmpty)
             SliverFillRemaining(
               child: _buildErrorState(context),
             ),
@@ -304,7 +309,8 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen>
     );
   }
 
-  Widget _buildCategoryCard(BuildContext context, Category category, int index) {
+  Widget _buildCategoryCard(
+      BuildContext context, Category category, int index) {
     final isExpanded = _expandedCategoryId == category.id;
     final color = _getCategoryColor(index);
 
@@ -317,15 +323,15 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen>
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: isExpanded 
-                ? color.withOpacity(0.2) 
+            color: isExpanded
+                ? color.withOpacity(0.2)
                 : AppColors.shadow.withOpacity(0.08),
             blurRadius: isExpanded ? 20 : 12,
             offset: const Offset(0, 4),
           ),
         ],
-        border: isExpanded 
-            ? Border.all(color: color.withOpacity(0.3), width: 2) 
+        border: isExpanded
+            ? Border.all(color: color.withOpacity(0.3), width: 2)
             : null,
       ),
       child: Column(
@@ -372,11 +378,14 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            category.displayName,
-                            style:
-                                Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                            category.getLocalizedName(
+                                context.l10n.locale.languageCode),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                           ),
                           if (category.hasChildren) ...[
                             const SizedBox(height: 4),
@@ -412,17 +421,28 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen>
                         ),
                       )
                     else
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          color: color,
-                          size: 16,
+                      GestureDetector(
+                        onTap: () {
+                          // Navigate to category products for categories without children
+                          context.push(
+                            Routes.categoryProducts.replaceFirst(
+                              ':categoryId',
+                              category.id.toString(),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: color,
+                            size: 16,
+                          ),
                         ),
                       ),
                   ],
@@ -435,8 +455,9 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen>
           AnimatedCrossFade(
             firstChild: const SizedBox.shrink(),
             secondChild: _buildSubcategories(context, category, color),
-            crossFadeState:
-                isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            crossFadeState: isExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 300),
             sizeCurve: Curves.easeOutCubic,
           ),
@@ -465,18 +486,18 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen>
 
               return GestureDetector(
                 onTap: () {
-                  // Navigate to category products
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('${context.l10n.tr('browsing')} ${sub.displayName}'),
-                      duration: const Duration(seconds: 1),
-                      behavior: SnackBarBehavior.floating,
+                  // Navigate to subcategory products
+                  context.push(
+                    Routes.categoryProducts.replaceFirst(
+                      ':categoryId',
+                      sub.id.toString(),
                     ),
                   );
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: subColor.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(14),
@@ -498,7 +519,7 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen>
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        sub.displayName,
+                        sub.getLocalizedName(context.l10n.locale.languageCode),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                               color: AppColors.textPrimary,
@@ -533,7 +554,8 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen>
     // Create variations of the parent color
     final hsl = HSLColor.fromColor(parentColor);
     final newHue = (hsl.hue + (index * 30)) % 360;
-    return HSLColor.fromAHSL(1, newHue, hsl.saturation * 0.8, hsl.lightness).toColor();
+    return HSLColor.fromAHSL(1, newHue, hsl.saturation * 0.8, hsl.lightness)
+        .toColor();
   }
 
   IconData _getCategoryIcon(String iconName) {
@@ -555,4 +577,3 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen>
     return iconMap[iconName] ?? Icons.category_rounded;
   }
 }
-

@@ -6,8 +6,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../config/theme.dart';
 import '../../../core/localization/app_localizations.dart';
 
+import '../../../config/routes.dart';
 import '../../../data/providers/projects_provider.dart';
 import '../widgets/product_card.dart';
+import 'package:go_router/go_router.dart';
 
 class ProjectDetailScreen extends ConsumerWidget {
   final int projectId;
@@ -225,7 +227,12 @@ class ProjectDetailScreen extends ConsumerWidget {
                           return ProductCard(
                             product: products[index],
                             onTap: () {
-                              // Navigate to product detail
+                              context.push(
+                                Routes.productDetail.replaceFirst(
+                                  ':productId',
+                                  products[index].id.toString(),
+                                ),
+                              );
                             },
                           );
                         },

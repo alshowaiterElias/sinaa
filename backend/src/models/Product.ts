@@ -3,6 +3,9 @@ import sequelize from '../config/database';
 import { PROJECT_STATUS } from '../config/constants';
 import Project from './Project';
 import Category from './Category';
+import ProductImage from './ProductImage';
+import ProductVariant from './ProductVariant';
+import Tag from './Tag';
 
 type ProductStatus = 'pending' | 'approved' | 'rejected';
 
@@ -72,11 +75,19 @@ class Product
     // Associations
     public readonly project?: Project;
     public readonly category?: Category;
+    public readonly images?: ProductImage[];
+    public readonly variants?: ProductVariant[];
+    public readonly tags?: Tag[];
 
     // Helper methods
     public isApproved(): boolean {
         return this.status === PROJECT_STATUS.APPROVED;
     }
+
+    // Association Mixins
+    public addTag!: (tag: Tag | number) => Promise<void>;
+    public removeTag!: (tag: Tag | number) => Promise<void>;
+    public hasTag!: (tag: Tag | number) => Promise<boolean>;
 }
 
 Product.init(
@@ -195,5 +206,26 @@ Product.belongsTo(Project, { foreignKey: 'projectId', as: 'project' });
 
 Category.hasMany(Product, { foreignKey: 'categoryId', as: 'products' });
 Product.belongsTo(Category, { foreignKey: 'categoryId', as: 'category' });
+
+Product.hasMany(ProductImage, { foreignKey: 'productId', as: 'images' });
+ProductImage.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
+
+Product.hasMany(ProductVariant, { foreignKey: 'productId', as: 'variants' });
+ProductVariant.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
+
+Product.belongsToMany(Tag, {
+    through: 'product_tags',
+    foreignKey: 'product_id',
+    otherKey: 'tag_id',
+    as: 'tags',
+    timestamps: false,
+});
+Tag.belongsToMany(Product, {
+    through: 'product_tags',
+    foreignKey: 'tag_id',
+    otherKey: 'product_id',
+    as: 'products',
+    timestamps: false,
+});
 
 export default Product;

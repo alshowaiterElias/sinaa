@@ -106,6 +106,49 @@ class _ProjectEditScreenState extends ConsumerState<ProjectEditScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // Re-approval warning banner
+            Container(
+              margin: const EdgeInsets.only(bottom: 20),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.amber.withAlpha(26),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber.withAlpha(77)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.warning_amber_rounded,
+                      color: Colors.amber.shade700, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          context.isRtl ? 'تنبيه مهم' : 'Important Notice',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.amber.shade800,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          context.isRtl
+                              ? 'أي تعديلات على معلومات المشروع ستؤدي إلى إعادة المراجعة من قبل الإدارة، ولن يظهر المشروع للعملاء حتى تتم الموافقة عليه مرة أخرى.'
+                              : 'Any changes to your project information will require admin re-approval. Your project won\'t be visible to customers until approved again.',
+                          style: TextStyle(
+                            color: Colors.amber.shade700,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
             // Basic Info
             Text(
               l10n.tr('project.basicInfo'),

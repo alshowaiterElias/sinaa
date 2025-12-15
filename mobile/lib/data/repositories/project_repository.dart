@@ -36,12 +36,17 @@ class ProjectsRepository {
 
       final data = response.data['data'];
 
+      // API returns data as array directly with pagination at root level
+      final List projectsList = data is List ? data : data['rows'] as List;
+      final paginationData = data is List
+          ? response.data['pagination'] as Map<String, dynamic>
+          : data['pagination'] as Map<String, dynamic>;
+
       return ProjectsResponse(
-        projects: (data['rows'] as List)
+        projects: projectsList
             .map((json) => Project.fromJson(json as Map<String, dynamic>))
             .toList(),
-        pagination:
-            PaginationInfo.fromJson(data['pagination'] as Map<String, dynamic>),
+        pagination: PaginationInfo.fromJson(paginationData),
       );
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
@@ -79,12 +84,23 @@ class ProjectsRepository {
 
       final data = response.data['data'];
 
+      // Handle both possible response structures
+      final List productsList;
+      final Map<String, dynamic> paginationData;
+
+      if (data is List) {
+        productsList = data;
+        paginationData = response.data['pagination'] as Map<String, dynamic>;
+      } else {
+        productsList = data['rows'] as List;
+        paginationData = data['pagination'] as Map<String, dynamic>;
+      }
+
       return ProjectProductsResponse(
-        products: (data['rows'] as List)
+        products: productsList
             .map((json) => Product.fromJson(json as Map<String, dynamic>))
             .toList(),
-        pagination:
-            PaginationInfo.fromJson(data['pagination'] as Map<String, dynamic>),
+        pagination: PaginationInfo.fromJson(paginationData),
       );
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);

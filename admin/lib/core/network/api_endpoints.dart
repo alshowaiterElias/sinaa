@@ -34,6 +34,8 @@ class ApiEndpoints {
   static String product(int id) => '/admin/products/$id';
   static String productApprove(int id) => '/admin/products/$id/approve';
   static String productReject(int id) => '/admin/products/$id/reject';
+  static String productDisable(int id) => '/admin/products/$id/disable';
+  static String productEnable(int id) => '/admin/products/$id/enable';
 
   // Categories management
   static const String categories = '/admin/categories';
@@ -47,9 +49,12 @@ class ApiEndpoints {
   static String reviewApprove(int id) => '/admin/reviews/$id/approve';
   static String reviewReject(int id) => '/admin/reviews/$id/reject';
 
-  // Tickets management
-  static const String tickets = '/admin/tickets';
-  static String ticket(int id) => '/admin/tickets/$id';
+  // Support Tickets management
+  static const String tickets = '/admin/support/tickets';
+  static String ticket(int id) => '/admin/support/tickets/$id';
+  static String ticketStatus(int id) => '/admin/support/tickets/$id/status';
+  static String ticketAssign(int id) => '/admin/support/tickets/$id/assign';
+  static String ticketResolve(int id) => '/admin/support/tickets/$id/resolve';
 
   // Settings
   static const String settings = '/admin/settings';

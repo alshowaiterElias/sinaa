@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/network/api_endpoints.dart';
 import '../../../data/models/product_model.dart';
 
 class ProductCard extends StatelessWidget {
@@ -31,9 +32,11 @@ class ProductCard extends StatelessWidget {
             Expanded(
               child: Stack(
                 children: [
-                  if (product.images.isNotEmpty)
+                  if (product.posterImageUrl.isNotEmpty)
                     CachedNetworkImage(
-                      imageUrl: product.images.first,
+                      imageUrl: product.posterImageUrl.startsWith('http')
+                          ? product.posterImageUrl
+                          : '${ApiEndpoints.baseUrl.replaceAll('/api/v1', '')}${product.posterImageUrl}',
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
@@ -80,7 +83,7 @@ class ProductCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${product.price} SAR', // TODO: Format currency properly
+                    '${product.basePrice} SAR', // TODO: Format currency properly
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.bold,

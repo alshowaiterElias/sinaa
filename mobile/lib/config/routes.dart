@@ -13,6 +13,8 @@ import '../features/home/screens/home_screen.dart';
 import '../features/search/screens/search_screen.dart';
 import '../features/cart/screens/cart_screen.dart';
 import '../features/chat/screens/conversations_screen.dart';
+import '../features/chat/screens/chat_screen.dart';
+import '../features/notifications/screens/notifications_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
 import '../features/profile/screens/edit_profile_screen.dart';
 import '../features/profile/screens/change_password_screen.dart';
@@ -25,6 +27,16 @@ import '../features/projects/widgets/social_links_editor.dart';
 import '../features/projects/screens/location_picker_screen.dart';
 import '../features/projects/screens/pending_approval_screen.dart';
 import '../features/projects/screens/disabled_project_screen.dart';
+import '../features/products/screens/product_list_screen.dart';
+import '../features/products/screens/product_form_screen.dart';
+import '../features/products/screens/product_detail_screen.dart'
+    as product_detail;
+import '../features/support/screens/support_tickets_screen.dart';
+import '../features/support/screens/create_ticket_screen.dart';
+import '../features/support/screens/ticket_detail_screen.dart';
+import '../features/transactions/screens/transactions_screen.dart';
+import '../features/transactions/screens/transaction_detail_screen.dart';
+import '../features/transactions/screens/create_review_screen.dart';
 import '../shared/widgets/main_scaffold.dart';
 import '../data/providers/auth_provider.dart';
 import '../core/localization/app_localizations.dart';
@@ -60,7 +72,15 @@ class Routes {
   static const String myProject = '/my-project';
   static const String notifications = '/notifications';
   static const String allCategories = '/categories';
-  static const String categoryProducts = '/categories/:categoryId';
+  static const String categoryProducts = '/categories/:categoryId/products';
+  static const String projectProducts = '/project/:projectId/products';
+  static const String productForm = '/product/form';
+  static const String supportTickets = '/support/tickets';
+  static const String createTicket = '/support/tickets/new';
+  static const String ticketDetail = '/support/tickets/:ticketId';
+  static const String transactions = '/transactions';
+  static const String transactionDetail = '/transactions/:transactionId';
+  static const String createReview = '/transactions/:transactionId/review';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -208,6 +228,112 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.allCategories,
         builder: (context, state) => const AllCategoriesScreen(),
+      ),
+
+      // Category Products
+      GoRoute(
+        path: Routes.categoryProducts,
+        builder: (context, state) {
+          final categoryId = int.parse(state.pathParameters['categoryId']!);
+          return ProductListScreen(categoryId: categoryId);
+        },
+      ),
+
+      // Project Products
+      GoRoute(
+        path: Routes.projectProducts,
+        builder: (context, state) {
+          final projectId = int.parse(state.pathParameters['projectId']!);
+          final extra = state.extra as Map<String, dynamic>?;
+          final isOwner = extra?['isOwner'] as bool? ?? false;
+          return ProductListScreen(
+            projectId: projectId,
+            isOwner: isOwner,
+          );
+        },
+      ),
+
+      // Product Detail
+      GoRoute(
+        path: Routes.productDetail,
+        builder: (context, state) {
+          final productId = int.parse(state.pathParameters['productId']!);
+          return product_detail.ProductDetailScreen(productId: productId);
+        },
+      ),
+
+      // Product Form
+      GoRoute(
+        path: Routes.productForm,
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          final projectId = extra?['projectId'] as int;
+          final product = extra?['product']; // Cast to Product if needed
+          return ProductFormScreen(
+            projectId: projectId,
+            product: product,
+          );
+        },
+      ),
+
+      // Chat
+      GoRoute(
+        path: Routes.chat,
+        builder: (context, state) {
+          final conversationId =
+              int.parse(state.pathParameters['conversationId']!);
+          return ChatScreen(conversationId: conversationId);
+        },
+      ),
+
+      // Notifications
+      GoRoute(
+        path: Routes.notifications,
+        builder: (context, state) => const NotificationsScreen(),
+      ),
+
+      // Support Tickets
+      GoRoute(
+        path: Routes.supportTickets,
+        builder: (context, state) => const SupportTicketsScreen(),
+      ),
+      GoRoute(
+        path: Routes.createTicket,
+        builder: (context, state) => const CreateTicketScreen(),
+      ),
+      GoRoute(
+        path: Routes.ticketDetail,
+        builder: (context, state) {
+          final ticketId = int.parse(state.pathParameters['ticketId']!);
+          return TicketDetailScreen(ticketId: ticketId);
+        },
+      ),
+
+      // Transactions
+      GoRoute(
+        path: Routes.transactions,
+        builder: (context, state) => const TransactionsScreen(),
+      ),
+      GoRoute(
+        path: Routes.transactionDetail,
+        builder: (context, state) {
+          final transactionId =
+              int.parse(state.pathParameters['transactionId']!);
+          return TransactionDetailScreen(transactionId: transactionId);
+        },
+      ),
+      GoRoute(
+        path: Routes.createReview,
+        builder: (context, state) {
+          final transactionId =
+              int.parse(state.pathParameters['transactionId']!);
+          // productId should be passed via extra or query params
+          final productId = state.uri.queryParameters['productId'];
+          return CreateReviewScreen(
+            transactionId: transactionId,
+            productId: productId != null ? int.parse(productId) : 0,
+          );
+        },
       ),
 
       // Main app shell with bottom navigation

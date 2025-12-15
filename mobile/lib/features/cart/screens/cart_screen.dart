@@ -1,122 +1,137 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../config/theme.dart';
+import '../../../config/routes.dart';
 import '../../../core/localization/app_localizations.dart';
-import '../../../shared/widgets/loading_button.dart';
+import '../../../core/network/api_endpoints.dart';
+import '../../../data/models/cart_item_model.dart';
+import '../../../data/providers/cart_provider.dart';
+import 'cart_item_card.dart';
 
-class CartScreen extends ConsumerWidget {
+/// Cart Screen - displays inquiry cart items grouped by project
+class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends ConsumerState<CartScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Load cart when screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(cartProvider.notifier).loadCart();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cartState = ref.watch(cartProvider);
+    final isRtl = context.isRtl;
     final l10n = context.l10n;
-    // TODO: Replace with actual cart data from provider
-    final cartItems = <_CartItemData>[];
-    final isEmpty = cartItems.isEmpty;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(l10n.tr('inquiryCart')),
         actions: [
-          if (!isEmpty)
-            TextButton.icon(
-              onPressed: () {
-                // TODO: Clear cart
-              },
-              icon: const Icon(Icons.delete_outline_rounded, size: 20),
-              label: Text(l10n.tr('clearAll')),
+          if (!cartState.isEmpty)
+            TextButton(
+              onPressed: () => _showClearCartDialog(context),
+              child: Text(
+                l10n.tr('clearAll'),
+                style: TextStyle(color: AppColors.error),
+              ),
             ),
         ],
       ),
-      body: isEmpty
-          ? _buildEmptyState(context)
-          : _buildCartContent(context, cartItems),
+      body: _buildBody(cartState, isRtl, l10n),
       bottomNavigationBar:
-          isEmpty ? null : _buildBottomBar(context, cartItems.length),
+          cartState.isEmpty ? null : _buildSendButton(cartState, l10n),
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    final l10n = context.l10n;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
+  Widget _buildBody(CartState cartState, bool isRtl, AppLocalizations l10n) {
+    if (cartState.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (cartState.error != null) {
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Illustration
+            const Icon(Icons.error_outline, size: 64, color: AppColors.error),
+            const SizedBox(height: 16),
+            Text(cartState.error!),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => ref.read(cartProvider.notifier).loadCart(),
+              child: Text(l10n.tr('retry')),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (cartState.isEmpty) {
+      return _buildEmptyState(l10n);
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => ref.read(cartProvider.notifier).loadCart(),
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: cartState.groups.length,
+        itemBuilder: (context, index) {
+          return _buildProjectGroup(cartState.groups[index], isRtl, l10n);
+        },
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(AppLocalizations l10n) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
             Container(
-              width: 160,
-              height: 160,
+              padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.accent.withOpacity(0.15),
-                    AppColors.accent.withOpacity(0.05),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(40),
+                color: AppColors.surfaceVariant.withAlpha(100),
+                shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.shopping_bag_outlined,
+                Icons.shopping_cart_outlined,
                 size: 80,
-                color: AppColors.accent.withOpacity(0.5),
+                color: AppColors.textTertiary,
               ),
             ),
-
-            const SizedBox(height: 32),
-
+            const SizedBox(height: 24),
             Text(
               l10n.tr('emptyCart'),
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
-
-            const SizedBox(height: 12),
-
+            const SizedBox(height: 8),
             Text(
               l10n.tr('addProductsToCart'),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                    height: 1.6,
-                  ),
               textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary),
             ),
-
-            const SizedBox(height: 40),
-
-            Container(
-              decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withOpacity(0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  // TODO: Navigate to search/home
-                },
-                icon: const Icon(Icons.explore_rounded),
-                label: Text(l10n.tr('browseProducts')),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
-                  ),
-                ),
-              ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () => context.go(Routes.home),
+              icon: const Icon(Icons.explore),
+              label: Text(l10n.tr('browseProducts')),
             ),
           ],
         ),
@@ -124,263 +139,150 @@ class CartScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCartContent(
-      BuildContext context, List<_CartItemData> cartItems) {
-    final l10n = context.l10n;
-    // Group items by project
-    final groupedItems = <String, List<_CartItemData>>{};
-    for (final item in cartItems) {
-      groupedItems.putIfAbsent(item.projectId, () => []).add(item);
-    }
-
-    return CustomScrollView(
-      slivers: [
-        // Info banner
-        SliverToBoxAdapter(
-          child: Container(
-            margin: const EdgeInsets.all(20),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.info.withOpacity(0.1),
-                  AppColors.info.withOpacity(0.05),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: AppColors.info.withOpacity(0.2),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.info.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.info_outline_rounded,
-                    color: AppColors.info,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.tr('howCartWorks'),
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.info,
-                            ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        l10n.tr('cartExplanation'),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // Grouped items
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final projectId = groupedItems.keys.elementAt(index);
-                final items = groupedItems[projectId]!;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: _buildProjectGroup(context, projectId, items),
-                );
-              },
-              childCount: groupedItems.length,
-            ),
-          ),
-        ),
-
-        // Bottom padding for the floating bar
-        const SliverToBoxAdapter(
-          child: SizedBox(height: 120),
-        ),
-      ],
-    );
-  }
-
   Widget _buildProjectGroup(
-    BuildContext context,
-    String projectId,
-    List<_CartItemData> items,
-  ) {
-    final l10n = context.l10n;
+      CartGroup group, bool isRtl, AppLocalizations l10n) {
+    final project = group.project;
+    final projectName = isRtl ? project.nameAr : project.name;
+
     return Container(
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: AppTheme.softShadow,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(8),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Project header
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.secondary.withOpacity(0.08),
-                  AppColors.secondary.withOpacity(0.02),
+          InkWell(
+            onTap: () {
+              context.push(
+                Routes.projectDetail
+                    .replaceFirst(':projectId', project.id.toString()),
+              );
+            },
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withAlpha(10),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Row(
+                children: [
+                  // Logo
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: AppColors.surface,
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: project.logoUrl != null
+                        ? CachedNetworkImage(
+                            imageUrl: ApiEndpoints.imageUrl(project.logoUrl),
+                            fit: BoxFit.cover,
+                          )
+                        : const Icon(Icons.store,
+                            color: AppColors.textTertiary),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          projectName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Icon(Icons.location_on,
+                                size: 14, color: AppColors.textSecondary),
+                            const SizedBox(width: 4),
+                            Text(
+                              project.city,
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withAlpha(20),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '${group.items.length} ${l10n.tr('productsCount')}',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right,
+                    color: AppColors.textSecondary,
+                  ),
                 ],
               ),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(20),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    gradient: AppColors.secondaryGradient,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(
-                    Icons.storefront_rounded,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.tr('projects'),
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${items.length} ${l10n.tr('productsCount')}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
             ),
           ),
-
-          // Items
-          ...items.map((item) => _buildCartItem(context, item)),
+          // Cart items
+          ...group.items.map((item) => CartItemCard(
+                item: item,
+                onQuantityChanged: (newQuantity) {
+                  ref.read(cartProvider.notifier).updateCartItem(
+                        itemId: item.id,
+                        quantity: newQuantity,
+                      );
+                },
+                onRemove: () {
+                  ref.read(cartProvider.notifier).removeFromCart(item.id);
+                },
+              )),
+          const SizedBox(height: 8),
         ],
       ),
     );
   }
 
-  Widget _buildCartItem(BuildContext context, _CartItemData item) {
+  Widget _buildSendButton(CartState cartState, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        border: Border(
-          top: BorderSide(color: AppColors.divider, width: 1),
-        ),
-      ),
-      child: Row(
-        children: [
-          // Product image
-          Container(
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceVariant,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.image_rounded,
-              color: AppColors.textTertiary,
-            ),
-          ),
-
-          const SizedBox(width: 14),
-
-          // Product info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.productName,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '${item.price} ر.س',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ],
-            ),
-          ),
-
-          // Remove button
-          IconButton(
-            onPressed: () {
-              // TODO: Remove item
-            },
-            icon: const Icon(
-              Icons.close_rounded,
-              color: AppColors.textTertiary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomBar(BuildContext context, int itemCount) {
-    final l10n = context.l10n;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       decoration: BoxDecoration(
         color: AppColors.surface,
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadow.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
+            color: Colors.black.withAlpha(15),
+            blurRadius: 10,
+            offset: const Offset(0, -4),
           ),
         ],
       ),
       child: SafeArea(
-        top: false,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -388,52 +290,127 @@ class CartScreen extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  l10n.tr('totalProducts'),
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                  l10n.tr('projects'),
+                  style: TextStyle(color: AppColors.textSecondary),
                 ),
                 Text(
-                  '$itemCount ${l10n.tr('productCount')}',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  '${cartState.projectCount}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  l10n.tr('totalProducts'),
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+                Text(
+                  '${cartState.totalItems}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            LoadingButton(
-              onPressed: () {
-                // TODO: Send all inquiries
-              },
-              isLoading: false,
-              text: l10n.tr('sendInquiries'),
-              icon: Icons.send_rounded,
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: cartState.isSending
+                    ? null
+                    : () => _showSendConfirmation(l10n),
+                icon: cartState.isSending
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.send_rounded),
+                label: Text(
+                  cartState.isSending
+                      ? l10n.tr('sending')
+                      : l10n.tr('sendInquiries'),
+                ),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: AppColors.primary,
+                ),
+              ),
             ),
           ],
         ),
       ),
     );
   }
-}
 
-// Temporary data class for cart items
-class _CartItemData {
-  final String id;
-  final String productId;
-  final String productName;
-  final String projectId;
-  final String projectName;
-  final double price;
-  final String? imageUrl;
+  void _showClearCartDialog(BuildContext context) {
+    final l10n = context.l10n;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.tr('clearCart')),
+        content: Text(l10n.tr('clearCartConfirmation')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.tr('cancel')),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ref.read(cartProvider.notifier).clearCart();
+            },
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            child: Text(l10n.tr('clearAll')),
+          ),
+        ],
+      ),
+    );
+  }
 
-  _CartItemData({
-    required this.id,
-    required this.productId,
-    required this.productName,
-    required this.projectId,
-    required this.projectName,
-    required this.price,
-    this.imageUrl,
-  });
+  void _showSendConfirmation(AppLocalizations l10n) {
+    final cartState = ref.read(cartProvider);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = GoRouter.of(context);
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.tr('sendInquiries')),
+        content: Text(
+          l10n
+              .tr('sendInquiriesConfirmation')
+              .replaceAll('{count}', cartState.projectCount.toString()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.tr('cancel')),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              final response =
+                  await ref.read(cartProvider.notifier).sendInquiries();
+              if (response != null && mounted) {
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text(l10n.tr('inquiriesSent')),
+                    backgroundColor: AppColors.success,
+                  ),
+                );
+                // Navigate to conversations
+                if (response.conversationIds.isNotEmpty) {
+                  navigator.go(Routes.conversations);
+                }
+              }
+            },
+            child: Text(l10n.tr('send')),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -231,6 +231,13 @@ class _MyProjectScreenState extends ConsumerState<MyProjectScreen> {
                         title: context.tr('project.manageProducts'),
                         onTap: () {
                           // Navigate to products management
+                          context.push(
+                            Routes.projectProducts.replaceFirst(
+                              ':projectId',
+                              project.id.toString(),
+                            ),
+                            extra: {'isOwner': true},
+                          );
                         },
                       ),
                       _ActionCard(

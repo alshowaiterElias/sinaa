@@ -4,6 +4,16 @@ import categoriesRoutes from './categories.routes';
 import adminRoutes from './admin.routes';
 import projectRoutes from './projects.routes';
 import adminProjectRoutes from './admin.projects.routes';
+import productRoutes from './products.routes';
+import adminProductRoutes from './admin.products.routes';
+import tagsRoutes from './tags.routes';
+import cartRoutes from './cart.routes';
+import conversationsRoutes from './conversations.routes';
+import notificationsRoutes from './notifications.routes';
+import supportRoutes from './support.routes';
+import adminSupportRoutes from './admin.support.routes';
+import transactionsRoutes from './transactions.routes';
+import reviewsRoutes from './reviews.routes';
 import { authenticate, adminOnly } from '../middleware/auth';
 
 const router = Router();
@@ -12,10 +22,20 @@ const router = Router();
 router.use('/auth', authRoutes);
 router.use('/categories', categoriesRoutes);
 router.use('/projects', projectRoutes);
+router.use('/products', productRoutes);
+router.use('/tags', tagsRoutes);
+router.use('/cart', cartRoutes);
+router.use('/conversations', conversationsRoutes);
+router.use('/notifications', notificationsRoutes);
+router.use('/support', supportRoutes);
+router.use('/transactions', transactionsRoutes);
+router.use('/reviews', reviewsRoutes);
 
 // Admin routes
 router.use('/admin', adminRoutes);
 router.use('/admin/projects', authenticate, adminOnly, adminProjectRoutes);
+router.use('/admin/products', authenticate, adminOnly, adminProductRoutes);
+router.use('/admin/support', adminSupportRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {

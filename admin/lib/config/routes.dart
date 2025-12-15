@@ -9,6 +9,7 @@ import '../features/users/screens/users_list_screen.dart';
 import '../features/projects/screens/projects_screen.dart';
 import '../features/projects/screens/project_detail_screen.dart';
 import '../features/products/screens/products_list_screen.dart';
+import '../features/products/screens/product_detail_screen.dart';
 import '../features/categories/screens/categories_screen.dart';
 import '../features/reviews/screens/reviews_screen.dart';
 import '../features/tickets/screens/tickets_screen.dart';
@@ -29,7 +30,7 @@ class AdminRoutes {
   static const String productDetail = '/products/:id';
   static const String categories = '/categories';
   static const String reviews = '/reviews';
-  static const String tickets = '/tickets';
+  static const String tickets = '/tickets'; // Support tickets route
   static const String ticketDetail = '/tickets/:id';
   static const String settings = '/settings';
 }
@@ -107,6 +108,17 @@ final adminRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) => const NoTransitionPage(
               child: ProductsListScreen(),
             ),
+            routes: [
+              GoRoute(
+                path: ':id',
+                pageBuilder: (context, state) {
+                  final id = int.parse(state.pathParameters['id']!);
+                  return NoTransitionPage(
+                    child: ProductDetailScreen(productId: id),
+                  );
+                },
+              ),
+            ],
           ),
           GoRoute(
             path: AdminRoutes.categories,
