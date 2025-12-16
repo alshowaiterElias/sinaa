@@ -101,11 +101,13 @@ class TransactionProduct {
   final int id;
   final String name;
   final double? price;
+  final int? ownerId; // Product owner (from project.ownerId)
 
   TransactionProduct({
     required this.id,
     required this.name,
     this.price,
+    this.ownerId,
   });
 
   factory TransactionProduct.fromJson(Map<String, dynamic> json) {
@@ -119,10 +121,19 @@ class TransactionProduct {
         parsedPrice = double.tryParse(priceValue);
       }
     }
+
+    // Extract ownerId from nested project
+    int? ownerId;
+    if (json['project'] != null) {
+      final project = json['project'] as Map<String, dynamic>;
+      ownerId = project['ownerId'] ?? project['owner_id'];
+    }
+
     return TransactionProduct(
       id: json['id'] as int,
       name: json['name'] ?? '',
       price: parsedPrice,
+      ownerId: ownerId,
     );
   }
 }
@@ -216,16 +227,20 @@ class Transaction {
       (status == TransactionStatus.pending &&
           DateTime.now().isAfter(autoConfirmAt));
 
-  /// Check if given user can submit a review (must be the customer, not seller)
+  /// Check if given user can submit a review (must NOT be the product owner)
   bool canSubmitReview(int userId) {
     if (!canRate) return false;
     if (productId == null) return false;
-    // Only the customer can submit reviews, not the seller/product owner
-    if (customerId != null) {
-      return userId == customerId;
+    if (product == null) return false;
+
+    // Only non-owners can submit reviews (customers, not sellers)
+    final ownerId = product!.ownerId;
+    if (ownerId != null) {
+      // User is the product owner = cannot review
+      return userId != ownerId;
     }
-    // Fallback: if customerId is null, allow rating (old transactions)
-    return true;
+    // Fallback: if ownerId is null, disallow rating for safety
+    return false;
   }
 
   /// Days until auto-confirm

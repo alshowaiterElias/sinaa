@@ -95,12 +95,8 @@ export function initializeSocket(httpServer: HttpServer): Server {
                     return;
                 }
 
-                // Check if user is customer or project owner
-                const project = conversation.project;
-                const isCustomer = conversation.customerId === userId;
-                const isProjectOwner = project?.ownerId === userId;
-
-                if (!isCustomer && !isProjectOwner) {
+                // Check if user is part of this conversation using new schema
+                if (!conversation.hasParticipant(userId)) {
                     socket.emit('error', { message: 'Access denied' });
                     return;
                 }
@@ -139,11 +135,8 @@ export function initializeSocket(httpServer: HttpServer): Server {
                     return;
                 }
 
-                const project = conversation.project;
-                const isCustomer = conversation.customerId === userId;
-                const isProjectOwner = project?.ownerId === userId;
-
-                if (!isCustomer && !isProjectOwner) {
+                // Check if user is part of this conversation using new schema
+                if (!conversation.hasParticipant(userId)) {
                     socket.emit('error', { message: 'Access denied' });
                     return;
                 }
@@ -180,7 +173,7 @@ export function initializeSocket(httpServer: HttpServer): Server {
                 });
 
                 // Notify the other party if not in room
-                const otherUserId = isCustomer ? project?.ownerId : conversation.customerId;
+                const otherUserId = conversation.getOtherParticipantId(userId);
                 if (otherUserId) {
                     io.to(`user:${otherUserId}`).emit('conversationUpdated', {
                         conversationId,

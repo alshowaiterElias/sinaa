@@ -1,22 +1,30 @@
+import 'dart:convert';
+
 /// Conversation model for chat
 class Conversation {
   final int id;
-  final int customerId;
-  final int projectId;
+  final int? user1Id;
+  final int? user2Id;
+  final int? projectId;
   final DateTime? lastMessageAt;
   final DateTime createdAt;
-  final ConversationUser? customer;
+  final ConversationUser? user1;
+  final ConversationUser? user2;
+  final ConversationUser? otherUser;
   final ConversationProject? project;
   final LastMessage? lastMessage;
   final int unreadCount;
 
   const Conversation({
     required this.id,
-    required this.customerId,
-    required this.projectId,
+    this.user1Id,
+    this.user2Id,
+    this.projectId,
     this.lastMessageAt,
     required this.createdAt,
-    this.customer,
+    this.user1,
+    this.user2,
+    this.otherUser,
     this.project,
     this.lastMessage,
     this.unreadCount = 0,
@@ -25,9 +33,9 @@ class Conversation {
   factory Conversation.fromJson(Map<String, dynamic> json) {
     return Conversation(
       id: json['id'] as int? ?? 0,
-      customerId:
-          json['customerId'] as int? ?? json['customer_id'] as int? ?? 0,
-      projectId: json['projectId'] as int? ?? json['project_id'] as int? ?? 0,
+      user1Id: json['user1Id'] as int? ?? json['user1_id'] as int?,
+      user2Id: json['user2Id'] as int? ?? json['user2_id'] as int?,
+      projectId: json['projectId'] as int? ?? json['project_id'] as int?,
       lastMessageAt: json['lastMessageAt'] != null
           ? DateTime.parse(json['lastMessageAt'] as String)
           : json['last_message_at'] != null
@@ -38,8 +46,14 @@ class Conversation {
           : json['created_at'] != null
               ? DateTime.parse(json['created_at'] as String)
               : DateTime.now(),
-      customer: json['customer'] != null
-          ? ConversationUser.fromJson(json['customer'] as Map<String, dynamic>)
+      user1: json['user1'] != null
+          ? ConversationUser.fromJson(json['user1'] as Map<String, dynamic>)
+          : null,
+      user2: json['user2'] != null
+          ? ConversationUser.fromJson(json['user2'] as Map<String, dynamic>)
+          : null,
+      otherUser: json['otherUser'] != null
+          ? ConversationUser.fromJson(json['otherUser'] as Map<String, dynamic>)
           : null,
       project: json['project'] != null
           ? ConversationProject.fromJson(
@@ -54,22 +68,22 @@ class Conversation {
 
   /// Get display name based on user role
   String getDisplayName(int currentUserId, String locale) {
-    if (customerId == currentUserId) {
-      // User is customer, show project name
-      return project?.getLocalizedName(locale) ?? 'Unknown';
-    } else {
-      // User is project owner, show customer name
-      return customer?.fullName ?? 'Unknown';
+    // Use otherUser if available (new schema)
+    if (otherUser != null) {
+      return otherUser!.fullName;
     }
+    // Fallback to project name if available
+    return project?.getLocalizedName(locale) ?? 'Unknown';
   }
 
   /// Get avatar URL based on user role
   String? getAvatarUrl(int currentUserId) {
-    if (customerId == currentUserId) {
-      return project?.logoUrl;
-    } else {
-      return customer?.avatarUrl;
+    // Use otherUser if available (new schema)
+    if (otherUser != null) {
+      return otherUser!.avatarUrl;
     }
+    // Fallback to project logo
+    return project?.logoUrl;
   }
 }
 
@@ -174,7 +188,7 @@ class LastMessage {
     return content.length > 50 ? '${content.substring(0, 50)}...' : content;
   }
 
-  /// Get localized preview
+  /// Get localized preview with product name for transaction messages
   String getLocalizedPreview(String locale) {
     if (messageType == 'image') {
       return locale == 'ar' ? '📷 صورة' : '📷 Image';
@@ -183,6 +197,21 @@ class LastMessage {
       return locale == 'ar' ? '📋 استفسار' : '📋 Inquiry';
     }
     if (messageType == 'transaction') {
+      // Try to parse JSON content for product name
+      try {
+        final data = jsonDecode(content) as Map<String, dynamic>;
+        final productName = locale == 'ar'
+            ? (data['productNameAr'] as String? ??
+                data['productName'] as String?)
+            : (data['productName'] as String?);
+        if (productName != null && productName.isNotEmpty) {
+          return locale == 'ar'
+              ? '⭐ طلب تقييم: $productName'
+              : '⭐ Rating: $productName';
+        }
+      } catch (_) {
+        // JSON parsing failed, use default
+      }
       return locale == 'ar' ? '⭐ طلب تقييم' : '⭐ Rating Request';
     }
     return content.length > 50 ? '${content.substring(0, 50)}...' : content;

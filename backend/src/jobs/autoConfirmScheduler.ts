@@ -6,14 +6,13 @@ import Project from '../models/Project';
 const AUTO_CONFIRM_INTERVAL = 60 * 60 * 1000;
 
 // Helper to get user IDs from conversation
-async function getConversationParties(conversationId: number): Promise<{ customerId: number; sellerId: number | null }> {
+async function getConversationParties(conversationId: number): Promise<{ user1Id: number; user2Id: number }> {
     const conversation = await Conversation.findByPk(conversationId);
-    if (!conversation) return { customerId: 0, sellerId: null };
+    if (!conversation) return { user1Id: 0, user2Id: 0 };
 
-    const project = await Project.findByPk(conversation.projectId);
     return {
-        customerId: conversation.customerId,
-        sellerId: project?.ownerId ?? null,
+        user1Id: conversation.user1Id,
+        user2Id: conversation.user2Id,
     };
 }
 
@@ -54,10 +53,10 @@ export async function processAutoConfirmTransactions(): Promise<void> {
                 const notificationTitle = 'Transaction Auto-Confirmed';
                 const notificationTitleAr = 'تأكيد تلقائي للتقييم';
 
-                // Notify customer
-                if (parties.customerId) {
+                // Notify user1
+                if (parties.user1Id) {
                     await Notification.create({
-                        userId: parties.customerId,
+                        userId: parties.user1Id,
                         type: 'transaction_auto_confirmed',
                         title: notificationTitle,
                         titleAr: notificationTitleAr,
@@ -65,10 +64,10 @@ export async function processAutoConfirmTransactions(): Promise<void> {
                     });
                 }
 
-                // Notify seller
-                if (parties.sellerId) {
+                // Notify user2
+                if (parties.user2Id) {
                     await Notification.create({
-                        userId: parties.sellerId,
+                        userId: parties.user2Id,
                         type: 'transaction_auto_confirmed',
                         title: notificationTitle,
                         titleAr: notificationTitleAr,

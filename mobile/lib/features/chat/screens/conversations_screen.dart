@@ -228,14 +228,10 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
     int currentUserId,
     bool isRtl,
   ) {
-    final isCustomer = conversation.customerId == currentUserId;
-    final displayName = isCustomer
-        ? conversation.project?.getLocalizedName(isRtl ? 'ar' : 'en') ??
-            'Unknown'
-        : conversation.customer?.fullName ?? 'Unknown';
-    final avatarUrl = isCustomer
-        ? conversation.project?.logoUrl
-        : conversation.customer?.avatarUrl;
+    // Use the helper methods which now use otherUser
+    final displayName =
+        conversation.getDisplayName(currentUserId, isRtl ? 'ar' : 'en');
+    final avatarUrl = conversation.getAvatarUrl(currentUserId);
     final hasUnread = conversation.unreadCount > 0;
 
     return Container(

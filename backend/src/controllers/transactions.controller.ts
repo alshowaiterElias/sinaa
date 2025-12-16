@@ -17,31 +17,34 @@ async function getOtherPartyId(conversationId: number, currentUserId: number): P
     const conversation = await Conversation.findByPk(conversationId);
     if (!conversation) return null;
 
-    if (conversation.customerId === currentUserId) {
-        // Current user is customer, get seller (project owner)
-        const project = await Project.findByPk(conversation.projectId);
-        return project?.ownerId ?? null;
-    } else {
-        // Current user is seller, return customer
-        return conversation.customerId;
+    // Use the new normalized schema
+    if (conversation.user1Id === currentUserId) {
+        return conversation.user2Id;
+    } else if (conversation.user2Id === currentUserId) {
+        return conversation.user1Id;
     }
+    return null;
 }
 
 // Helper to determine if user is customer or seller in conversation
 async function getUserRole(conversationId: number, userId: number): Promise<'customer' | 'seller' | null> {
-    const conversation = await Conversation.findByPk(conversationId);
+    const conversation = await Conversation.findByPk(conversationId, {
+        include: [{ model: Project, as: 'project' }],
+    });
     if (!conversation) return null;
 
-    if (conversation.customerId === userId) {
-        return 'customer';
+    // Check if user is part of conversation
+    if (conversation.user1Id !== userId && conversation.user2Id !== userId) {
+        return null;
     }
 
-    const project = await Project.findByPk(conversation.projectId);
-    if (project?.ownerId === userId) {
+    // If there's a project, the owner is the seller
+    if (conversation.project?.ownerId === userId) {
         return 'seller';
     }
 
-    return null;
+    // Otherwise, user is the customer
+    return 'customer';
 }
 
 /**
@@ -78,22 +81,8 @@ export const initiateTransaction = async (req: Request, res: Response, next: Nex
             });
         }
 
-        // Check for existing pending transaction in this conversation
-        const existingPendingTransaction = await Transaction.findOne({
-            where: {
-                conversationId,
-                status: 'pending',
-            },
-        });
-
-        if (existingPendingTransaction) {
-            return res.status(400).json({
-                success: false,
-                error: { code: 'ALREADY_EXISTS', message: 'A pending transaction already exists for this conversation' },
-            });
-        }
-
         // Check for existing transaction for this specific product (pending or confirmed)
+        // Allow multiple transactions per conversation as long as products are different
         if (productId) {
             const existingProductTransaction = await Transaction.findOne({
                 where: {
@@ -108,9 +97,27 @@ export const initiateTransaction = async (req: Request, res: Response, next: Nex
                     error: { code: 'PRODUCT_ALREADY_RATED', message: 'A transaction already exists for this product' },
                 });
             }
+        } else {
+            // If no product specified, check for existing pending transaction without product
+            const existingPendingTransaction = await Transaction.findOne({
+                where: {
+                    conversationId,
+                    productId: null,
+                    status: 'pending',
+                },
+            });
+
+            if (existingPendingTransaction) {
+                return res.status(400).json({
+                    success: false,
+                    error: { code: 'ALREADY_EXISTS', message: 'A pending transaction already exists for this conversation' },
+                });
+            }
         }
 
-        // Verify product if provided
+        // Verify product if provided and get product details
+        let productName: string | null = null;
+        let productNameAr: string | null = null;
         if (productId) {
             const product = await Product.findByPk(productId);
             if (!product) {
@@ -119,6 +126,8 @@ export const initiateTransaction = async (req: Request, res: Response, next: Nex
                     error: { code: 'NOT_FOUND', message: 'Product not found' },
                 });
             }
+            productName = product.name;
+            productNameAr = product.nameAr || product.name;
         }
 
         // Calculate auto-confirm date
@@ -152,13 +161,15 @@ export const initiateTransaction = async (req: Request, res: Response, next: Nex
             });
         }
 
-        // Create a transaction message in the chat
+        // Create a transaction message in the chat with product details
         await Message.create({
             conversationId,
             senderId: userId,
             content: JSON.stringify({
                 transactionId: transaction.id,
                 productId: productId || null,
+                productName: productName,
+                productNameAr: productNameAr,
             }),
             messageType: 'transaction',
         });
@@ -204,33 +215,18 @@ export const getTransactions = async (req: Request, res: Response, next: NextFun
             whereClause.status = status;
         }
 
-        // Get conversations where user is involved
+        // Get conversations where user is involved (using new normalized schema)
         const userConversations = await Conversation.findAll({
             where: {
                 [Op.or]: [
-                    { customerId: userId },
+                    { user1Id: userId },
+                    { user2Id: userId },
                 ],
             },
             attributes: ['id'],
         });
 
-        // Also get conversations for projects user owns
-        const userProjects = await Project.findAll({
-            where: { ownerId: userId },
-            attributes: ['id'],
-        });
-
-        const projectConversations = await Conversation.findAll({
-            where: {
-                projectId: { [Op.in]: userProjects.map(p => p.id) },
-            },
-            attributes: ['id'],
-        });
-
-        const conversationIds = [
-            ...userConversations.map(c => c.id),
-            ...projectConversations.map(c => c.id),
-        ];
+        const conversationIds = userConversations.map(c => c.id);
 
         whereClause.conversationId = { [Op.in]: conversationIds };
 
@@ -238,12 +234,20 @@ export const getTransactions = async (req: Request, res: Response, next: NextFun
             where: whereClause,
             include: [
                 { model: User, as: 'initiator', attributes: ['id', 'fullName', 'avatarUrl'] },
-                { model: Product, as: 'product', attributes: ['id', 'name', 'basePrice'] },
+                {
+                    model: Product,
+                    as: 'product',
+                    attributes: ['id', 'name', 'basePrice'],
+                    include: [
+                        { model: Project, as: 'project', attributes: ['id', 'ownerId'] },
+                    ],
+                },
                 {
                     model: Conversation,
                     as: 'conversation',
                     include: [
-                        { model: User, as: 'customer', attributes: ['id', 'fullName', 'avatarUrl'] },
+                        { model: User, as: 'user1', attributes: ['id', 'fullName', 'avatarUrl'] },
+                        { model: User, as: 'user2', attributes: ['id', 'fullName', 'avatarUrl'] },
                     ],
                 },
             ],
@@ -279,12 +283,20 @@ export const getTransactionById = async (req: Request, res: Response, next: Next
         const transaction = await Transaction.findByPk(id, {
             include: [
                 { model: User, as: 'initiator', attributes: ['id', 'fullName', 'avatarUrl'] },
-                { model: Product, as: 'product', attributes: ['id', 'name', 'basePrice'] },
+                {
+                    model: Product,
+                    as: 'product',
+                    attributes: ['id', 'name', 'basePrice'],
+                    include: [
+                        { model: Project, as: 'project', attributes: ['id', 'ownerId'] },
+                    ],
+                },
                 {
                     model: Conversation,
                     as: 'conversation',
                     include: [
-                        { model: User, as: 'customer', attributes: ['id', 'fullName', 'avatarUrl'] },
+                        { model: User, as: 'user1', attributes: ['id', 'fullName', 'avatarUrl'] },
+                        { model: User, as: 'user2', attributes: ['id', 'fullName', 'avatarUrl'] },
                     ],
                 },
             ],

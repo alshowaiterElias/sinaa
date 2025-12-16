@@ -14,3 +14,4 @@ module.exports = {
         await queryInterface.removeColumn('projects', 'disable_reason');
     }
 };
+

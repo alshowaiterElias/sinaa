@@ -55,11 +55,14 @@ class ConversationsNotifier extends Notifier<ConversationsState> {
       if (conv.id == conversationId) {
         return Conversation(
           id: conv.id,
-          customerId: conv.customerId,
+          user1Id: conv.user1Id,
+          user2Id: conv.user2Id,
           projectId: conv.projectId,
           lastMessageAt: message.createdAt,
           createdAt: conv.createdAt,
-          customer: conv.customer,
+          user1: conv.user1,
+          user2: conv.user2,
+          otherUser: conv.otherUser,
           project: conv.project,
           lastMessage: LastMessage(
             id: message.id,
@@ -88,11 +91,14 @@ class ConversationsNotifier extends Notifier<ConversationsState> {
       if (conv.id == conversationId && conv.unreadCount > 0) {
         return Conversation(
           id: conv.id,
-          customerId: conv.customerId,
+          user1Id: conv.user1Id,
+          user2Id: conv.user2Id,
           projectId: conv.projectId,
           lastMessageAt: conv.lastMessageAt,
           createdAt: conv.createdAt,
-          customer: conv.customer,
+          user1: conv.user1,
+          user2: conv.user2,
+          otherUser: conv.otherUser,
           project: conv.project,
           lastMessage: conv.lastMessage,
           unreadCount: 0,

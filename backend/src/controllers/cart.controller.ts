@@ -291,14 +291,25 @@ export const sendInquiries = async (req: Request, res: Response, next: NextFunct
         for (const projectId of Object.keys(groupedByProject).map(Number)) {
             const group = groupedByProject[projectId];
 
+            // Get project owner
+            const project = await Project.findByPk(projectId, { transaction });
+            if (!project) continue;
+
+            const otherUserId = project.ownerId;
+
+            // Normalize user pair (user1Id is always smaller)
+            const user1Id = userId < otherUserId ? userId : otherUserId;
+            const user2Id = userId > otherUserId ? userId : otherUserId;
+
             // Find or create conversation
             const [conversation] = await Conversation.findOrCreate({
                 where: {
-                    customerId: userId,
-                    projectId,
+                    user1Id,
+                    user2Id,
                 },
                 defaults: {
-                    customerId: userId,
+                    user1Id,
+                    user2Id,
                     projectId,
                 },
                 transaction,

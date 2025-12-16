@@ -9,7 +9,7 @@ module.exports = {
         primaryKey: true,
         autoIncrement: true,
       },
-      customer_id: {
+      user1_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
@@ -18,16 +18,29 @@ module.exports = {
         },
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
+        comment: 'Normalized: always the smaller user ID',
       },
-      project_id: {
+      user2_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'projects',
+          model: 'users',
           key: 'id',
         },
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
+        comment: 'Normalized: always the larger user ID',
+      },
+      project_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'projects',
+          key: 'id',
+        },
+        onDelete: 'SET NULL',
+        onUpdate: 'CASCADE',
+        comment: 'Optional: context for product-related chats',
       },
       last_message_at: {
         type: Sequelize.DATE,
@@ -39,14 +52,15 @@ module.exports = {
       },
     });
 
-    // Add unique constraint for customer_id + project_id
-    await queryInterface.addIndex('conversations', ['customer_id', 'project_id'], {
+    // Add unique constraint on user pair (ensures one conversation per user pair)
+    await queryInterface.addIndex('conversations', ['user1_id', 'user2_id'], {
       unique: true,
-      name: 'unique_conversation',
+      name: 'unique_user_pair',
     });
 
-    // Add indexes
-    await queryInterface.addIndex('conversations', ['customer_id']);
+    // Add indexes for queries
+    await queryInterface.addIndex('conversations', ['user1_id']);
+    await queryInterface.addIndex('conversations', ['user2_id']);
     await queryInterface.addIndex('conversations', ['project_id']);
     await queryInterface.addIndex('conversations', ['last_message_at']);
   },
@@ -55,4 +69,3 @@ module.exports = {
     await queryInterface.dropTable('conversations');
   },
 };
-

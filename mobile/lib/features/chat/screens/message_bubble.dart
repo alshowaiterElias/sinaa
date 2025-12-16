@@ -135,12 +135,48 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildTransactionContent(BuildContext context) {
+    // Parse product name from JSON content
+    String? productName;
+    try {
+      if (message.content.startsWith('{')) {
+        final data = jsonDecode(message.content) as Map<String, dynamic>;
+        final locale = Localizations.localeOf(context).languageCode;
+        productName = locale == 'ar'
+            ? (data['productNameAr'] as String? ??
+                data['productName'] as String?)
+            : (data['productName'] as String?);
+      }
+    } catch (_) {}
+
+    final isRtl = Localizations.localeOf(context).languageCode == 'ar';
+
+    // Different theme based on who sent the request
+    // Sender (isMe = true): green tones - "You sent a rating request"
+    // Receiver (isMe = false): amber tones - "You received a rating request"
+    final Color bgColor = isMe ? Colors.green.shade50 : Colors.amber.shade50;
+    final Color borderColor =
+        isMe ? Colors.green.shade200 : Colors.amber.shade200;
+    final Color iconBgColor =
+        isMe ? Colors.green.shade100 : Colors.amber.shade100;
+    final Color iconColor =
+        isMe ? Colors.green.shade700 : Colors.amber.shade700;
+    final Color titleColor =
+        isMe ? Colors.green.shade900 : Colors.amber.shade900;
+    final Color subtitleColor =
+        isMe ? Colors.green.shade800 : Colors.amber.shade800;
+    final Color hintColor =
+        isMe ? Colors.green.shade700 : Colors.amber.shade700;
+
+    final String title = isMe
+        ? (isRtl ? 'طلب تقييم مُرسل' : 'Rating Request Sent')
+        : (isRtl ? 'طلب تقييم وارد' : 'Rating Request Received');
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.amber.shade50,
+        color: bgColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.amber.shade200),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,13 +187,13 @@ class MessageBubble extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.amber.shade100,
+                  color: iconBgColor,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
-                  Icons.star_rate_rounded,
+                  isMe ? Icons.send_rounded : Icons.star_rate_rounded,
                   size: 20,
-                  color: Colors.amber.shade700,
+                  color: iconColor,
                 ),
               ),
               const SizedBox(width: 12),
@@ -166,23 +202,32 @@ class MessageBubble extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      Localizations.localeOf(context).languageCode == 'ar'
-                          ? 'طلب تقييم'
-                          : 'Rating Request',
+                      title,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
-                        color: Colors.amber.shade900,
+                        color: titleColor,
                       ),
                     ),
+                    if (productName != null && productName.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        productName,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: subtitleColor,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                     const SizedBox(height: 2),
                     Text(
-                      Localizations.localeOf(context).languageCode == 'ar'
-                          ? 'اضغط للتفاصيل'
-                          : 'Tap for details',
+                      isRtl ? 'اضغط للتفاصيل' : 'Tap for details',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.amber.shade700,
+                        color: hintColor,
                       ),
                     ),
                   ],
@@ -190,7 +235,7 @@ class MessageBubble extends StatelessWidget {
               ),
               Icon(
                 Icons.chevron_right,
-                color: Colors.amber.shade700,
+                color: iconColor,
               ),
             ],
           ),

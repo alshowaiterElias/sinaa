@@ -34,7 +34,7 @@ module.exports = {
         allowNull: false,
       },
       message_type: {
-        type: Sequelize.ENUM('text', 'inquiry', 'image'),
+        type: Sequelize.ENUM('text', 'inquiry', 'image', 'transaction'),
         defaultValue: 'text',
         comment: 'inquiry type is for auto-generated cart inquiry messages',
       },

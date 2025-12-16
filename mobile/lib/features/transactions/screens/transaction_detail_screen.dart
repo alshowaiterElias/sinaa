@@ -334,48 +334,55 @@ class _TransactionDetailBodyState
             const SizedBox(height: 16),
           ],
 
-          // Actions
+          // Actions for pending transactions
           if (widget.transaction.isPending) ...[
             const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _isLoading ? null : _confirmTransaction,
-                    icon: const Icon(Icons.check),
-                    label: Text(widget.isRtl ? 'تأكيد' : 'Confirm'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+            // Confirm/Deny only shown for receiver (not the initiator)
+            if (widget.currentUserId != widget.transaction.initiatedBy) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _isLoading ? null : _confirmTransaction,
+                      icon: const Icon(Icons.check),
+                      label: Text(widget.isRtl ? 'تأكيد' : 'Confirm'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _isLoading ? null : _denyTransaction,
-                    icon: const Icon(Icons.close),
-                    label: Text(widget.isRtl ? 'رفض' : 'Deny'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _isLoading ? null : _denyTransaction,
+                      icon: const Icon(Icons.close),
+                      label: Text(widget.isRtl ? 'رفض' : 'Deny'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Colors.red),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            // Only show cancel button for initiator
+                ],
+              ),
+            ],
+            // Cancel button only shown for initiator (the one who sent it)
             if (widget.currentUserId == widget.transaction.initiatedBy) ...[
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
-                child: TextButton.icon(
+                child: OutlinedButton.icon(
                   onPressed: _isLoading ? null : _cancelTransaction,
                   icon: const Icon(Icons.cancel_outlined),
                   label: Text(widget.isRtl ? 'إلغاء الطلب' : 'Cancel Request'),
-                  style: TextButton.styleFrom(foregroundColor: Colors.grey),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
                 ),
               ),
             ],
