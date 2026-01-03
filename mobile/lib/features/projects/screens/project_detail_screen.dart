@@ -8,6 +8,8 @@ import '../../../core/localization/app_localizations.dart';
 
 import '../../../config/routes.dart';
 import '../../../data/providers/projects_provider.dart';
+import '../../../data/providers/favorites_provider.dart';
+import '../../../data/repositories/favorites_repository.dart';
 import '../widgets/product_card.dart';
 import 'package:go_router/go_router.dart';
 
@@ -68,6 +70,9 @@ class ProjectDetailScreen extends ConsumerWidget {
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ),
+                actions: [
+                  _FavoriteButton(projectId: projectId),
+                ],
               ),
 
               // Project Info
@@ -289,5 +294,95 @@ class ProjectDetailScreen extends ConsumerWidget {
     if (url != null && await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     }
+  }
+}
+
+/// Favorite button widget with toggle functionality
+class _FavoriteButton extends ConsumerStatefulWidget {
+  final int projectId;
+
+  const _FavoriteButton({required this.projectId});
+
+  @override
+  ConsumerState<_FavoriteButton> createState() => _FavoriteButtonState();
+}
+
+class _FavoriteButtonState extends ConsumerState<_FavoriteButton> {
+  bool _isFavorite = false;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFavoriteStatus();
+  }
+
+  Future<void> _checkFavoriteStatus() async {
+    try {
+      final repository = ref.read(favoritesRepositoryProvider);
+      final isFav = await repository.checkFavorite(widget.projectId);
+      if (mounted) {
+        setState(() {
+          _isFavorite = isFav;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    setState(() => _isLoading = true);
+    try {
+      final repository = ref.read(favoritesRepositoryProvider);
+      final newStatus = await repository.toggleFavorite(widget.projectId);
+      if (mounted) {
+        setState(() {
+          _isFavorite = newStatus;
+          _isLoading = false;
+        });
+        // Refresh favorites list
+        ref.invalidate(favoritesProvider);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: AppColors.surface.withAlpha(204),
+        shape: BoxShape.circle,
+      ),
+      child: _isLoading
+          ? const Padding(
+              padding: EdgeInsets.all(12),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          : IconButton(
+              icon: Icon(
+                _isFavorite
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
+                color: _isFavorite ? AppColors.error : AppColors.textPrimary,
+              ),
+              onPressed: _toggleFavorite,
+            ),
+    );
   }
 }

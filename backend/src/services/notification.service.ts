@@ -264,4 +264,20 @@ export const NotificationTemplates = {
             data: { projectId },
         });
     },
+
+    /**
+     * New product from favorited project notification
+     * Sent to users who have favorited a project when a new product is approved
+     */
+    newProductFromFavorite(userId: number, productId: number, productName: string, projectName: string, projectId: number, quantity: number): Promise<Notification> {
+        return createNotification({
+            userId,
+            type: 'product_approval',
+            title: `New product from ${projectName}`,
+            titleAr: `منتج جديد من ${projectName}`,
+            body: `${projectName} just added "${productName}" - ${quantity} available now!`,
+            bodyAr: `${projectName} أضاف "${productName}" - ${quantity} متوفر الآن!`,
+            data: { productId, projectId, quantity },
+        });
+    },
 };

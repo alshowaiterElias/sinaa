@@ -6,7 +6,10 @@ import {
   deleteCategory,
   reorderCategories,
   toggleCategory,
-} from '../controllers/categories.controller';
+  getCategoryRequests,
+  approveCategory,
+  rejectCategory,
+} from '../controllers/admin.categories.controller';
 import { validate, categoryValidations } from '../middleware/validate';
 import { authenticate, adminOnly } from '../middleware/auth';
 
@@ -23,6 +26,13 @@ router.use(authenticate, adminOnly);
  * @access  Admin
  */
 router.get('/categories', adminGetCategories);
+
+/**
+ * @route   GET /admin/categories/requests
+ * @desc    Get category requests (pending)
+ * @access  Admin
+ */
+router.get('/categories/requests', getCategoryRequests);
 
 /**
  * @route   POST /admin/categories
@@ -51,6 +61,20 @@ router.put('/categories/:id', validate(categoryValidations.update), updateCatego
  * @access  Admin
  */
 router.put('/categories/:id/toggle', validate(categoryValidations.getById), toggleCategory);
+
+/**
+ * @route   PUT /admin/categories/:id/approve
+ * @desc    Approve a category request
+ * @access  Admin
+ */
+router.put('/categories/:id/approve', validate(categoryValidations.getById), approveCategory);
+
+/**
+ * @route   PUT /admin/categories/:id/reject
+ * @desc    Reject a category request
+ * @access  Admin
+ */
+router.put('/categories/:id/reject', validate(categoryValidations.getById), rejectCategory);
 
 /**
  * @route   DELETE /admin/categories/:id

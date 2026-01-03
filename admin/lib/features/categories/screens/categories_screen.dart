@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../config/theme.dart';
 import '../../../data/models/category.dart';
 import '../../../data/providers/categories_provider.dart';
+import 'category_requests_screen.dart';
 
 class CategoriesScreen extends ConsumerStatefulWidget {
   const CategoriesScreen({super.key});
@@ -63,6 +64,24 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                                 .read(adminCategoriesStateProvider.notifier)
                                 .refresh();
                           },
+                  ),
+                  const SizedBox(width: 8),
+                  // Requests button
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const CategoryRequestsScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.notifications_active),
+                    label: const Text('الطلبات'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   // Add category button
@@ -279,7 +298,8 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
       },
       itemBuilder: (context, index) {
         final category = categories[index];
-        return _buildCategoryItem(context, category, key: ValueKey(category.id));
+        return _buildCategoryItem(context, category,
+            key: ValueKey(category.id));
       },
     );
   }
@@ -304,8 +324,9 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
           ),
           child: Icon(
             _getCategoryIcon(category.iconName),
-            color:
-                category.isActive ? AdminColors.primary : AdminColors.textTertiary,
+            color: category.isActive
+                ? AdminColors.primary
+                : AdminColors.textTertiary,
           ),
         ),
         title: Row(
@@ -436,11 +457,13 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                           ),
                           child: Text(
                             'غير نشط',
-                            style:
-                                Theme.of(context).textTheme.labelSmall?.copyWith(
-                                      color: AdminColors.error,
-                                      fontSize: 10,
-                                    ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                  color: AdminColors.error,
+                                  fontSize: 10,
+                                ),
                           ),
                         ),
                       ],
@@ -547,7 +570,8 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                 if (nameController.text.isEmpty ||
                     nameArController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('يرجى ملء جميع الحقول المطلوبة')),
+                    const SnackBar(
+                        content: Text('يرجى ملء جميع الحقول المطلوبة')),
                   );
                   return;
                 }

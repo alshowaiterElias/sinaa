@@ -11,6 +11,7 @@ import '../../../data/repositories/products_repository.dart';
 import '../../../data/repositories/chat_repository.dart';
 import '../../../data/providers/cart_provider.dart';
 import '../../../data/providers/transaction_provider.dart';
+import '../widgets/product_reviews_section.dart';
 import 'product_form_screen.dart';
 import 'package:go_router/go_router.dart';
 
@@ -153,24 +154,25 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       ),
                     ),
                   ),
-                  // Product name and status at bottom
+                  // Product name and status at bottom - positioned higher to avoid overflow
                   Positioned(
-                    bottom: 16,
+                    bottom: 48,
                     left: 16,
-                    right: 16,
+                    right: 56, // Leave space for edit button
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         _buildStatusBadge(product),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Text(
                           isRtl ? product.nameAr : product.name,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 22,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
-                          maxLines: 2,
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
@@ -1090,6 +1092,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             ),
                           ),
                         ],
+
+                        // Reviews Section
+                        ProductReviewsSection(
+                          productId: product.id,
+                          isRtl: isRtl,
+                        ),
+
+                        const SizedBox(height: 24),
                       ],
                     ),
                   ),

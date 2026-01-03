@@ -19,6 +19,8 @@ import '../features/profile/screens/profile_screen.dart';
 import '../features/profile/screens/edit_profile_screen.dart';
 import '../features/profile/screens/change_password_screen.dart';
 import '../features/categories/screens/all_categories_screen.dart';
+import '../features/categories/screens/category_request_screen.dart';
+import '../features/favorites/screens/favorites_screen.dart';
 import '../features/projects/screens/project_detail_screen.dart';
 import '../features/projects/screens/my_project_screen.dart';
 import '../features/projects/screens/project_edit_screen.dart';
@@ -81,6 +83,8 @@ class Routes {
   static const String transactions = '/transactions';
   static const String transactionDetail = '/transactions/:transactionId';
   static const String createReview = '/transactions/:transactionId/review';
+  static const String categoryRequests = '/category-requests';
+  static const String favorites = '/favorites';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -334,6 +338,18 @@ final routerProvider = Provider<GoRouter>((ref) {
             productId: productId != null ? int.parse(productId) : 0,
           );
         },
+      ),
+
+      // Category Requests
+      GoRoute(
+        path: Routes.categoryRequests,
+        builder: (context, state) => const CategoryRequestScreen(),
+      ),
+
+      // Favorites
+      GoRoute(
+        path: Routes.favorites,
+        builder: (context, state) => const FavoritesScreen(),
       ),
 
       // Main app shell with bottom navigation

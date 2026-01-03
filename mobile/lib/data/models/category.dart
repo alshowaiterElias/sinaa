@@ -9,6 +9,9 @@ class Category extends Equatable {
   final String? icon;
   final int sortOrder;
   final bool isActive;
+  final String status;
+  final int? createdBy;
+  final String? rejectionReason;
   final DateTime createdAt;
   final List<Category> children;
   final Category? parent;
@@ -21,6 +24,9 @@ class Category extends Equatable {
     this.icon,
     this.sortOrder = 0,
     this.isActive = true,
+    this.status = 'active',
+    this.createdBy,
+    this.rejectionReason,
     required this.createdAt,
     this.children = const [],
     this.parent,
@@ -36,6 +42,9 @@ class Category extends Equatable {
       icon: json['icon'] as String?,
       sortOrder: json['sortOrder'] as int? ?? 0,
       isActive: json['isActive'] as bool? ?? true,
+      status: json['status'] as String? ?? 'active',
+      createdBy: json['createdBy'] as int?,
+      rejectionReason: json['rejectionReason'] as String?,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
           : DateTime.now(),
@@ -60,6 +69,9 @@ class Category extends Equatable {
       'icon': icon,
       'sortOrder': sortOrder,
       'isActive': isActive,
+      'status': status,
+      'createdBy': createdBy,
+      'rejectionReason': rejectionReason,
       'createdAt': createdAt.toIso8601String(),
       'children': children.map((c) => c.toJson()).toList(),
       if (parent != null) 'parent': parent!.toJson(),
@@ -75,6 +87,9 @@ class Category extends Equatable {
     String? icon,
     int? sortOrder,
     bool? isActive,
+    String? status,
+    int? createdBy,
+    String? rejectionReason,
     DateTime? createdAt,
     List<Category>? children,
     Category? parent,
@@ -87,6 +102,9 @@ class Category extends Equatable {
       icon: icon ?? this.icon,
       sortOrder: sortOrder ?? this.sortOrder,
       isActive: isActive ?? this.isActive,
+      status: status ?? this.status,
+      createdBy: createdBy ?? this.createdBy,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
       createdAt: createdAt ?? this.createdAt,
       children: children ?? this.children,
       parent: parent ?? this.parent,
@@ -125,7 +143,9 @@ class Category extends Equatable {
         icon,
         sortOrder,
         isActive,
+        status,
+        createdBy,
+        rejectionReason,
         createdAt,
       ];
 }
-

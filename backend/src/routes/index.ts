@@ -14,6 +14,8 @@ import supportRoutes from './support.routes';
 import adminSupportRoutes from './admin.support.routes';
 import transactionsRoutes from './transactions.routes';
 import reviewsRoutes from './reviews.routes';
+import adminReviewsRoutes from './admin.reviews.routes';
+import favoritesRoutes from './favorites.routes';
 import { authenticate, adminOnly } from '../middleware/auth';
 
 const router = Router();
@@ -30,11 +32,13 @@ router.use('/notifications', notificationsRoutes);
 router.use('/support', supportRoutes);
 router.use('/transactions', transactionsRoutes);
 router.use('/reviews', reviewsRoutes);
+router.use('/favorites', favoritesRoutes);
 
 // Admin routes
 router.use('/admin', adminRoutes);
 router.use('/admin/projects', authenticate, adminOnly, adminProjectRoutes);
 router.use('/admin/products', authenticate, adminOnly, adminProductRoutes);
+router.use('/admin/reviews', adminReviewsRoutes);
 router.use('/admin/support', adminSupportRoutes);
 
 // Health check endpoint

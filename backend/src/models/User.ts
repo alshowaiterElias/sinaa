@@ -35,7 +35,7 @@ export interface UserCreationAttributes
     | 'refreshToken'
     | 'createdAt'
     | 'updatedAt'
-  > {}
+  > { }
 
 // User model class
 class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {

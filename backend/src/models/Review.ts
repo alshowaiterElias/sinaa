@@ -100,7 +100,7 @@ Review.init(
         },
         status: {
             type: DataTypes.ENUM('pending', 'approved', 'rejected'),
-            defaultValue: 'pending',
+            defaultValue: 'approved',
         },
         createdAt: {
             type: DataTypes.DATE,

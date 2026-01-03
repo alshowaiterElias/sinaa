@@ -79,13 +79,25 @@ class ProfileScreen extends ConsumerWidget {
                 if (isLoggedIn) ...[
                   _buildMenuSection(
                     context,
-                    l10n.isRtl ? 'طلبات التقييم' : 'Rating Requests',
+                    l10n.isRtl ? 'الطلبات' : 'Requests',
                     [
+                      _MenuItem(
+                        icon: Icons.favorite_rounded,
+                        label: l10n.isRtl ? 'المفضلة' : 'My Favorites',
+                        onTap: () => context.push(Routes.favorites),
+                      ),
                       _MenuItem(
                         icon: Icons.star_rate_rounded,
                         label:
                             l10n.isRtl ? 'طلبات التقييم' : 'My Rating Requests',
                         onTap: () => context.push(Routes.transactions),
+                      ),
+                      _MenuItem(
+                        icon: Icons.category_rounded,
+                        label: l10n.isRtl
+                            ? 'طلبات التصنيفات'
+                            : 'Category Requests',
+                        onTap: () => context.push(Routes.categoryRequests),
                       ),
                     ],
                   ),

@@ -10,6 +10,9 @@ export interface CategoryAttributes {
   icon: string | null;
   sortOrder: number;
   isActive: boolean;
+  status: 'active' | 'inactive' | 'pending' | 'rejected';
+  createdBy: number | null;
+  rejectionReason: string | null;
   createdAt: Date;
 }
 
@@ -17,14 +20,13 @@ export interface CategoryAttributes {
 export interface CategoryCreationAttributes
   extends Optional<
     CategoryAttributes,
-    'id' | 'parentId' | 'icon' | 'sortOrder' | 'isActive' | 'createdAt'
-  > {}
+    'id' | 'parentId' | 'icon' | 'sortOrder' | 'isActive' | 'status' | 'createdBy' | 'rejectionReason' | 'createdAt'
+  > { }
 
 // Category model class
 class Category
   extends Model<CategoryAttributes, CategoryCreationAttributes>
-  implements CategoryAttributes
-{
+  implements CategoryAttributes {
   public id!: number;
   public parentId!: number | null;
   public name!: string;
@@ -32,6 +34,9 @@ class Category
   public icon!: string | null;
   public sortOrder!: number;
   public isActive!: boolean;
+  public status!: 'active' | 'inactive' | 'pending' | 'rejected';
+  public createdBy!: number | null;
+  public rejectionReason!: string | null;
   public createdAt!: Date;
 
   // Virtual associations
@@ -99,6 +104,25 @@ Category.init(
       defaultValue: true,
       field: 'is_active',
     },
+    status: {
+      type: DataTypes.ENUM('active', 'inactive', 'pending', 'rejected'),
+      defaultValue: 'active',
+      allowNull: false,
+    },
+    createdBy: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'created_by',
+      references: {
+        model: 'users',
+        key: 'id',
+      },
+    },
+    rejectionReason: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: 'rejection_reason',
+    },
     createdAt: {
       type: DataTypes.DATE,
       field: 'created_at',
@@ -113,6 +137,7 @@ Category.init(
       { fields: ['parent_id'] },
       { fields: ['is_active'] },
       { fields: ['sort_order'] },
+      { fields: ['status'] },
     ],
   }
 );
@@ -126,6 +151,12 @@ Category.belongsTo(Category, {
 Category.hasMany(Category, {
   as: 'children',
   foreignKey: 'parentId',
+});
+
+import User from './User';
+Category.belongsTo(User, {
+  as: 'creator',
+  foreignKey: 'createdBy',
 });
 
 export default Category;

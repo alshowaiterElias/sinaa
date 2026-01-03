@@ -13,6 +13,8 @@ export type NotificationType =
     | 'transaction_auto_confirmed'
     | 'review'
     | 'new_review'
+    | 'review_approved'
+    | 'review_rejected'
     | 'project_approval'
     | 'product_approval'
     | 'inquiry';

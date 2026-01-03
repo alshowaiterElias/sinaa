@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
-import { Product, ProductImage, ProductVariant, Tag, Category, Project, User } from '../models';
+import { Product, ProductImage, ProductVariant, Tag, Category, Project, User, UserFavorite } from '../models';
 import { sendSuccess, sendError, sendNotFound, sendPaginated } from '../utils/helpers';
 import { NotificationTemplates } from '../services/notification.service';
 
@@ -237,6 +237,36 @@ export const approveProduct = async (req: Request, res: Response) => {
                 product.id,
                 product.name
             );
+        }
+
+        // Notify users who have favorited this project (only if product has quantity >= 1)
+        if (product.projectId && product.quantity >= 1) {
+            try {
+                // Get all users who have favorited this project
+                const favorites = await UserFavorite.findAll({
+                    where: { projectId: product.projectId },
+                    attributes: ['userId'],
+                });
+
+                // Send notification to each user (excluding the project owner)
+                const projectName = product.project?.name || 'A project you follow';
+                for (const favorite of favorites) {
+                    // Don't notify the project owner (they already get a different notification)
+                    if (favorite.userId !== product.project?.ownerId) {
+                        NotificationTemplates.newProductFromFavorite(
+                            favorite.userId,
+                            product.id,
+                            product.name,
+                            projectName,
+                            product.projectId,
+                            product.quantity
+                        );
+                    }
+                }
+            } catch (notifyError) {
+                // Log error but don't fail the approval
+                console.error('Error notifying favorites:', notifyError);
+            }
         }
 
         return sendSuccess(res, product, 'Product approved successfully');

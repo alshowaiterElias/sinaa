@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../config/theme.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/network/api_endpoints.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/models/category.dart';
 import '../../../data/repositories/products_repository.dart';
@@ -265,7 +265,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                 ),
                 child: SafeArea(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
+                    padding: const EdgeInsets.fromLTRB(20, 60, 20, 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -408,7 +408,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
           ? FloatingActionButton.extended(
               onPressed: _navigateToAddProduct,
               icon: const Icon(Icons.add),
-              label: Text(context.isRtl ? 'إضافة منتج' : 'Add Product'),
+              label: Text("+"),
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
             )
@@ -524,91 +524,146 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Product image
+            // Product image with status badge
             Expanded(
               flex: 3,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(16)),
-                ),
-                width: double.infinity,
-                child: ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: product.posterImageUrl.isNotEmpty
-                      ? Image.network(
-                          'http://localhost:3000${product.posterImageUrl}',
-                          fit: BoxFit.cover,
-                          errorBuilder: (ctx, err, stack) => const Center(
-                            child: Icon(Icons.image,
-                                color: AppColors.textTertiary),
-                          ),
-                        )
-                      : const Center(
-                          child:
-                              Icon(Icons.image, color: AppColors.textTertiary),
+              child: Stack(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant,
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(16)),
+                    ),
+                    width: double.infinity,
+                    child: ClipRRect(
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(16)),
+                      child: product.posterImageUrl.isNotEmpty
+                          ? Image.network(
+                              ApiEndpoints.imageUrl(product.posterImageUrl),
+                              fit: BoxFit.cover,
+                              errorBuilder: (ctx, err, stack) => const Center(
+                                child: Icon(Icons.image,
+                                    color: AppColors.textTertiary),
+                              ),
+                            )
+                          : const Center(
+                              child: Icon(Icons.image,
+                                  color: AppColors.textTertiary),
+                            ),
+                    ),
+                  ),
+                  // Status badge for owner view
+                  if (widget.isOwner && product.status != 'approved')
+                    Positioned(
+                      top: 8,
+                      left: isRtl ? null : 8,
+                      right: isRtl ? 8 : null,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(product.status),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                ),
+                        child: Text(
+                          _getStatusLabel(product.status, isRtl),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
 
-            // Product info
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isRtl ? product.nameAr : product.name,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const Spacer(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
+            // Product info - fixed height to avoid overflow
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    isRtl ? product.nameAr : product.name,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
                           '${product.basePrice.toStringAsFixed(0)} ${isRtl ? 'ر.س' : 'SAR'}',
                           style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.bold,
                                   ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        if (product.averageRating > 0)
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.star_rounded,
-                                size: 14,
-                                color: AppColors.warning,
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                product.averageRating.toStringAsFixed(1),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelSmall
-                                    ?.copyWith(fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                      if (product.averageRating > 0)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.star_rounded,
+                              size: 12,
+                              color: AppColors.warning,
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              product.averageRating.toStringAsFixed(1),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'pending':
+        return AppColors.warning;
+      case 'rejected':
+        return AppColors.error;
+      case 'approved':
+        return AppColors.success;
+      default:
+        return AppColors.textTertiary;
+    }
+  }
+
+  String _getStatusLabel(String status, bool isRtl) {
+    switch (status) {
+      case 'pending':
+        return isRtl ? 'قيد المراجعة' : 'Pending';
+      case 'rejected':
+        return isRtl ? 'مرفوض' : 'Rejected';
+      case 'approved':
+        return isRtl ? 'موافق عليه' : 'Approved';
+      default:
+        return status;
+    }
   }
 }

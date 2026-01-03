@@ -11,6 +11,29 @@ async function getProjectOwnerId(productId: number): Promise<number | null> {
     return (product as any)?.project?.ownerId ?? null;
 }
 
+// Helper to recalculate product rating after review changes
+async function recalculateProductRating(productId: number): Promise<void> {
+    const result = await Review.findOne({
+        where: { productId, status: 'approved' },
+        attributes: [
+            [Review.sequelize!.fn('AVG', Review.sequelize!.col('rating')), 'avgRating'],
+            [Review.sequelize!.fn('COUNT', Review.sequelize!.col('id')), 'totalCount'],
+        ],
+        raw: true,
+    }) as any;
+
+    const averageRating = parseFloat(result?.avgRating || '0');
+    const totalReviews = parseInt(result?.totalCount || '0', 10);
+
+    await Product.update(
+        {
+            averageRating: Math.round(averageRating * 10) / 10, // Round to 1 decimal
+            totalReviews,
+        },
+        { where: { id: productId } }
+    );
+}
+
 /**
  * Create a new review (requires confirmed transaction)
  * POST /reviews
@@ -115,6 +138,9 @@ export const createReview = async (req: Request, res: Response, next: NextFuncti
                 { model: Product, as: 'product', attributes: ['id', 'name'] },
             ],
         });
+
+        // Recalculate product rating
+        await recalculateProductRating(productId);
 
         res.status(201).json({
             success: true,
@@ -264,9 +290,6 @@ export const updateReview = async (req: Request, res: Response, next: NextFuncti
             review.comment = comment;
         }
 
-        // Reset to pending if edited
-        review.status = 'pending';
-
         await review.save();
 
         const fullReview = await Review.findByPk(review.id, {
@@ -275,6 +298,9 @@ export const updateReview = async (req: Request, res: Response, next: NextFuncti
                 { model: Product, as: 'product', attributes: ['id', 'name'] },
             ],
         });
+
+        // Recalculate product rating (in case rating changed)
+        await recalculateProductRating(review.productId);
 
         res.json({
             success: true,
@@ -310,7 +336,11 @@ export const deleteReview = async (req: Request, res: Response, next: NextFuncti
             });
         }
 
+        const productId = review.productId;
         await review.destroy();
+
+        // Recalculate product rating
+        await recalculateProductRating(productId);
 
         res.json({
             success: true,

@@ -5,8 +5,34 @@ import {
   getCategoryProducts,
 } from '../controllers/categories.controller';
 import { validate, categoryValidations } from '../middleware/validate';
+import { authenticate } from '../middleware/auth';
+import {
+  requestCategory,
+  getMyRequests,
+} from '../controllers/categories.request.controller';
 
 const router = Router();
+
+// ==================== Protected Routes ====================
+
+/**
+ * @route   POST /categories/request
+ * @desc    Request a new category
+ * @access  Private
+ */
+router.post(
+  '/request',
+  authenticate,
+  validate(categoryValidations.create),
+  requestCategory
+);
+
+/**
+ * @route   GET /categories/my-requests
+ * @desc    Get my requested categories
+ * @access  Private
+ */
+router.get('/my-requests', authenticate, getMyRequests);
 
 // ==================== Public Routes ====================
 
@@ -36,4 +62,3 @@ router.get(
 );
 
 export default router;
-

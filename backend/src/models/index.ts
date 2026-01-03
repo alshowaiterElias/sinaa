@@ -13,6 +13,7 @@ import SupportTicket from './SupportTicket';
 import Transaction from './Transaction';
 import Review from './Review';
 import SystemSetting from './SystemSetting';
+import UserFavorite from './UserFavorite';
 
 export {
   User,
@@ -30,4 +31,5 @@ export {
   Transaction,
   Review,
   SystemSetting,
+  UserFavorite,
 };

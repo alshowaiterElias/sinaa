@@ -34,7 +34,8 @@ class ApiException implements Exception {
         case DioExceptionType.connectionTimeout:
         case DioExceptionType.sendTimeout:
         case DioExceptionType.receiveTimeout:
-          message = 'Connection timeout. Please check your internet connection.';
+          message =
+              'Connection timeout. Please check your internet connection.';
           code = 'TIMEOUT';
           break;
         case DioExceptionType.badResponse:
@@ -73,7 +74,8 @@ class AdminAuthInterceptor extends Interceptor {
   AdminAuthInterceptor(this._storage, this._dio);
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+  void onRequest(
+      RequestOptions options, RequestInterceptorHandler handler) async {
     final publicEndpoints = [
       ApiEndpoints.adminLogin,
       ApiEndpoints.refreshToken,
@@ -93,7 +95,7 @@ class AdminAuthInterceptor extends Interceptor {
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     if (err.response?.statusCode == 401) {
       final refreshToken = await _storage.getRefreshToken();
-      
+
       if (refreshToken != null) {
         try {
           final response = await _dio.post(
@@ -110,7 +112,7 @@ class AdminAuthInterceptor extends Interceptor {
 
             final opts = err.requestOptions;
             opts.headers['Authorization'] = 'Bearer ${data['accessToken']}';
-            
+
             final retryResponse = await _dio.fetch(opts);
             return handler.resolve(retryResponse);
           }
@@ -127,12 +129,11 @@ class AdminAuthInterceptor extends Interceptor {
 /// Dio provider for admin panel
 final adminDioProvider = Provider<Dio>((ref) {
   final storage = ref.watch(adminStorageProvider);
-  
+
   final dio = Dio(BaseOptions(
     baseUrl: ApiEndpoints.baseUrl,
     connectTimeout: const Duration(seconds: 30),
     receiveTimeout: const Duration(seconds: 30),
-    sendTimeout: const Duration(seconds: 30),
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -140,7 +141,7 @@ final adminDioProvider = Provider<Dio>((ref) {
   ));
 
   dio.interceptors.add(AdminAuthInterceptor(storage, dio));
-  
+
   dio.interceptors.add(LogInterceptor(
     requestBody: true,
     responseBody: true,
@@ -149,4 +150,3 @@ final adminDioProvider = Provider<Dio>((ref) {
 
   return dio;
 });
-

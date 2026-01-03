@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
+import '../../../config/routes.dart';
 import '../../../config/theme.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/network/api_endpoints.dart';
@@ -882,7 +884,24 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
             isRequired: false,
           ),
           const SizedBox(height: 16),
-          _buildCategoryDropdown(isRtl),
+          _buildCategorySearch(isRtl),
+          const SizedBox(height: 8),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              onPressed: _showCategoryRequestDialog,
+              icon: const Icon(Icons.add_circle_outline, size: 18),
+              label: Text(
+                isRtl ? 'طلب تصنيف جديد' : 'Request New Category',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                padding: EdgeInsets.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -961,7 +980,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
     );
   }
 
-  Widget _buildCategoryDropdown(bool isRtl) {
+  Widget _buildCategorySearch(bool isRtl) {
     if (_isCategoriesLoading) {
       return Container(
         height: 56,
@@ -973,39 +992,130 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
       );
     }
 
-    return DropdownButtonFormField<int>(
-      value: _selectedCategoryId,
-      decoration: InputDecoration(
-        labelText: isRtl ? 'التصنيف' : 'Category',
-        prefixIcon:
-            Icon(Icons.category_outlined, color: AppColors.textTertiary),
-        filled: true,
-        fillColor: AppColors.surfaceVariant.withAlpha(128),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+    // Find selected category object if ID is set
+    final initialCategory =
+        _selectedCategoryId != null && _categories.isNotEmpty
+            ? _categories.firstWhere((c) => c.id == _selectedCategoryId,
+                orElse: () => _categories.first)
+            : null;
+
+    return LayoutBuilder(builder: (context, constraints) {
+      return Autocomplete<Category>(
+        initialValue: TextEditingValue(
+          text: initialCategory != null
+              ? (isRtl ? initialCategory.nameAr : initialCategory.name)
+              : '',
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: AppColors.divider),
-        ),
-      ),
-      items: _categories.map((category) {
-        return DropdownMenuItem(
-          value: category.id,
-          child: Text(isRtl ? category.nameAr : category.name),
-        );
-      }).toList(),
-      onChanged: (value) {
-        setState(() => _selectedCategoryId = value);
-      },
-      validator: (value) {
-        if (value == null) {
-          return context.tr('validation.required');
-        }
-        return null;
-      },
-    );
+        optionsBuilder: (TextEditingValue textEditingValue) {
+          if (textEditingValue.text == '') {
+            return _categories;
+          }
+          return _categories.where((Category option) {
+            final name = isRtl ? option.nameAr : option.name;
+            return name
+                .toLowerCase()
+                .contains(textEditingValue.text.toLowerCase());
+          });
+        },
+        displayStringForOption: (Category option) =>
+            isRtl ? option.nameAr : option.name,
+        onSelected: (Category selection) {
+          setState(() {
+            _selectedCategoryId = selection.id;
+          });
+        },
+        fieldViewBuilder: (BuildContext context,
+            TextEditingController textEditingController,
+            FocusNode focusNode,
+            VoidCallback onFieldSubmitted) {
+          return TextFormField(
+            controller: textEditingController,
+            focusNode: focusNode,
+            decoration: InputDecoration(
+              labelText: isRtl ? 'التصنيف' : 'Category',
+              prefixIcon:
+                  Icon(Icons.category_outlined, color: AppColors.textTertiary),
+              filled: true,
+              fillColor: AppColors.surfaceVariant.withAlpha(128),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: AppColors.divider),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: AppColors.primary, width: 2),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: AppColors.error),
+              ),
+              suffixIcon: _selectedCategoryId != null
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 20),
+                      onPressed: () {
+                        textEditingController.clear();
+                        setState(() => _selectedCategoryId = null);
+                      },
+                    )
+                  : null,
+            ),
+            onChanged: (text) {
+              // Clear selection if text doesn't match selected category
+              if (_selectedCategoryId != null) {
+                final selected = _categories.firstWhere(
+                    (c) => c.id == _selectedCategoryId,
+                    orElse: () => _categories.first);
+                final name = isRtl ? selected.nameAr : selected.name;
+                if (text != name) {
+                  setState(() => _selectedCategoryId = null);
+                }
+              }
+            },
+            validator: (value) {
+              if (_selectedCategoryId == null) {
+                return context.tr('validation.required');
+              }
+              return null;
+            },
+          );
+        },
+        optionsViewBuilder: (context, onSelected, options) {
+          return Align(
+            alignment: Alignment.topLeft,
+            child: Material(
+              elevation: 4.0,
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                width: constraints.maxWidth,
+                constraints: const BoxConstraints(maxHeight: 200),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  shrinkWrap: true,
+                  itemCount: options.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    final Category option = options.elementAt(index);
+                    return ListTile(
+                      title: Text(isRtl ? option.nameAr : option.name),
+                      onTap: () {
+                        onSelected(option);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    });
   }
 
   Widget _buildPricingCard(bool isRtl) {
@@ -1040,6 +1150,36 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 16),
+          // Info box explaining quantity behavior
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.info.withAlpha(25),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.info.withAlpha(51)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline_rounded,
+                    color: AppColors.info, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    isRtl
+                        ? '• الكمية = 0: يمكن للعملاء طلب هذا المنتج للتصنيع حسب الطلب\n• الكمية ≥ 1: المنتج جاهز للبيع فوراً وسيتم إشعار المتابعين'
+                        : '• Qty = 0: Customers can request this product (made-to-order)\n• Qty ≥ 1: Ready to sell immediately & followers will be notified',
+                    style: TextStyle(
+                      color: AppColors.info.withAlpha(230),
+                      fontSize: 12,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -1340,6 +1480,63 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _showCategoryRequestDialog() {
+    final isRtl = context.isRtl;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded,
+                color: AppColors.warning, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                isRtl ? 'تنبيه هام' : 'Important Warning',
+                style: const TextStyle(fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isRtl
+                  ? 'سيتم فقدان جميع البيانات المدخلة في هذه الصفحة إذا تابعت.'
+                  : 'All data entered on this page will be lost if you proceed.',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              isRtl
+                  ? 'يتطلب إضافة تصنيف جديد موافقة الإدارة وقد تستغرق هذه العملية بعض الوقت.'
+                  : 'Adding a new category requires admin approval and this process takes time.',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(isRtl ? 'إلغاء' : 'Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              context.push(Routes.categoryRequests); // Navigate to requests
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.warning,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(isRtl ? 'متابعة' : 'Proceed'),
+          ),
+        ],
       ),
     );
   }

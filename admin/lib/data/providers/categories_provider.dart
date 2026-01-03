@@ -1,13 +1,17 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../core/network/api_client.dart';
-import '../../core/network/api_endpoints.dart';
 import '../models/category.dart';
+import '../repositories/categories_repository.dart';
+
+// Repository provider
+final categoriesRepositoryProvider = Provider<CategoriesRepository>((ref) {
+  return CategoriesRepository(ref.watch(adminDioProvider));
+});
 
 /// Categories state for admin
 class AdminCategoriesState {
   final List<Category> categories;
+  final List<Category> requests;
   final CategoriesStats? stats;
   final bool isLoading;
   final bool isInitialized;
@@ -15,6 +19,7 @@ class AdminCategoriesState {
 
   const AdminCategoriesState({
     this.categories = const [],
+    this.requests = const [],
     this.stats,
     this.isLoading = false,
     this.isInitialized = false,
@@ -48,6 +53,7 @@ class AdminCategoriesState {
 
   AdminCategoriesState copyWith({
     List<Category>? categories,
+    List<Category>? requests,
     CategoriesStats? stats,
     bool? isLoading,
     bool? isInitialized,
@@ -55,6 +61,7 @@ class AdminCategoriesState {
   }) {
     return AdminCategoriesState(
       categories: categories ?? this.categories,
+      requests: requests ?? this.requests,
       stats: stats ?? this.stats,
       isLoading: isLoading ?? this.isLoading,
       isInitialized: isInitialized ?? this.isInitialized,
@@ -65,11 +72,11 @@ class AdminCategoriesState {
 
 /// Admin categories notifier
 class AdminCategoriesNotifier extends Notifier<AdminCategoriesState> {
-  late Dio _dio;
+  late CategoriesRepository _repository;
 
   @override
   AdminCategoriesState build() {
-    _dio = ref.watch(adminDioProvider);
+    _repository = ref.watch(categoriesRepositoryProvider);
     return const AdminCategoriesState();
   }
 
@@ -82,37 +89,41 @@ class AdminCategoriesNotifier extends Notifier<AdminCategoriesState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final response = await _dio.get(ApiEndpoints.categories);
-      final data = response.data['data'];
-
-      final categoriesJson = data['categories'] as List;
-      final categories = categoriesJson
-          .map((json) => Category.fromJson(json as Map<String, dynamic>))
-          .toList();
-
-      final stats = data['stats'] != null
-          ? CategoriesStats.fromJson(data['stats'] as Map<String, dynamic>)
-          : null;
+      final response = await _repository.getCategories();
 
       state = state.copyWith(
-        categories: categories,
-        stats: stats,
+        categories: response.categories,
+        stats: response.stats,
         isLoading: false,
         isInitialized: true,
       );
-    } on DioException catch (e) {
-      final error = ApiException.fromDioError(e);
+    } on ApiException catch (e) {
       state = state.copyWith(
         isLoading: false,
         isInitialized: true,
-        error: error.message,
+        error: e.message,
       );
     }
   }
 
-  /// Refresh categories
+  /// Load category requests
+  Future<void> loadRequests() async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final requests = await _repository.getCategoryRequests();
+      state = state.copyWith(requests: requests, isLoading: false);
+    } on ApiException catch (e) {
+      state = state.copyWith(isLoading: false, error: e.message);
+    }
+  }
+
+  /// Refresh categories and requests
   Future<void> refresh() async {
-    await loadCategories(forceRefresh: true);
+    await Future.wait([
+      loadCategories(forceRefresh: true),
+      loadRequests(),
+    ]);
   }
 
   /// Create a new category
@@ -127,7 +138,7 @@ class AdminCategoriesNotifier extends Notifier<AdminCategoriesState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final response = await _dio.post(ApiEndpoints.categories, data: {
+      final category = await _repository.createCategory({
         'name': name,
         'nameAr': nameAr,
         if (icon != null) 'icon': icon,
@@ -136,19 +147,10 @@ class AdminCategoriesNotifier extends Notifier<AdminCategoriesState> {
         'isActive': isActive,
       });
 
-      final data = response.data['data'];
-      final category = Category.fromJson(data['category'] as Map<String, dynamic>);
-
-      // Refresh the list
       await refresh();
-
       return category;
-    } on DioException catch (e) {
-      final error = ApiException.fromDioError(e);
-      state = state.copyWith(
-        isLoading: false,
-        error: error.message,
-      );
+    } on ApiException catch (e) {
+      state = state.copyWith(isLoading: false, error: e.message);
       rethrow;
     }
   }
@@ -166,7 +168,7 @@ class AdminCategoriesNotifier extends Notifier<AdminCategoriesState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final response = await _dio.put(ApiEndpoints.category(id), data: {
+      final category = await _repository.updateCategory(id, {
         if (name != null) 'name': name,
         if (nameAr != null) 'nameAr': nameAr,
         if (icon != null) 'icon': icon,
@@ -175,19 +177,10 @@ class AdminCategoriesNotifier extends Notifier<AdminCategoriesState> {
         if (isActive != null) 'isActive': isActive,
       });
 
-      final data = response.data['data'];
-      final category = Category.fromJson(data['category'] as Map<String, dynamic>);
-
-      // Refresh the list
       await refresh();
-
       return category;
-    } on DioException catch (e) {
-      final error = ApiException.fromDioError(e);
-      state = state.copyWith(
-        isLoading: false,
-        error: error.message,
-      );
+    } on ApiException catch (e) {
+      state = state.copyWith(isLoading: false, error: e.message);
       rethrow;
     }
   }
@@ -197,18 +190,11 @@ class AdminCategoriesNotifier extends Notifier<AdminCategoriesState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      await _dio.delete(ApiEndpoints.category(id));
-
-      // Refresh the list
+      await _repository.deleteCategory(id);
       await refresh();
-
       return true;
-    } on DioException catch (e) {
-      final error = ApiException.fromDioError(e);
-      state = state.copyWith(
-        isLoading: false,
-        error: error.message,
-      );
+    } on ApiException catch (e) {
+      state = state.copyWith(isLoading: false, error: e.message);
       return false;
     }
   }
@@ -218,45 +204,52 @@ class AdminCategoriesNotifier extends Notifier<AdminCategoriesState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final response = await _dio.put('${ApiEndpoints.category(id)}/toggle');
-
-      final data = response.data['data'];
-      final category = Category.fromJson(data['category'] as Map<String, dynamic>);
-
-      // Refresh the list
+      final category = await _repository.toggleCategory(id);
       await refresh();
-
       return category;
-    } on DioException catch (e) {
-      final error = ApiException.fromDioError(e);
-      state = state.copyWith(
-        isLoading: false,
-        error: error.message,
-      );
+    } on ApiException catch (e) {
+      state = state.copyWith(isLoading: false, error: e.message);
       rethrow;
     }
   }
 
   /// Reorder categories
-  Future<bool> reorderCategories(List<Map<String, int>> orders) async {
+  Future<bool> reorderCategories(List<Map<String, dynamic>> orders) async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      await _dio.put('${ApiEndpoints.categories}/reorder', data: {
-        'orders': orders,
-      });
-
-      // Refresh the list
+      await _repository.reorderCategories(orders);
       await refresh();
-
       return true;
-    } on DioException catch (e) {
-      final error = ApiException.fromDioError(e);
-      state = state.copyWith(
-        isLoading: false,
-        error: error.message,
-      );
+    } on ApiException catch (e) {
+      state = state.copyWith(isLoading: false, error: e.message);
       return false;
+    }
+  }
+
+  /// Approve category request
+  Future<void> approveRequest(int id) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      await _repository.approveCategory(id);
+      await refresh();
+    } on ApiException catch (e) {
+      state = state.copyWith(isLoading: false, error: e.message);
+      rethrow;
+    }
+  }
+
+  /// Reject category request
+  Future<void> rejectRequest(int id, String reason) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      await _repository.rejectCategory(id, reason);
+      await refresh();
+    } on ApiException catch (e) {
+      state = state.copyWith(isLoading: false, error: e.message);
+      rethrow;
     }
   }
 }
@@ -275,3 +268,6 @@ final adminCategoriesStatsProvider = Provider<CategoriesStats?>((ref) {
   return ref.watch(adminCategoriesStateProvider).stats;
 });
 
+final categoryRequestsProvider = Provider<List<Category>>((ref) {
+  return ref.watch(adminCategoriesStateProvider).requests;
+});

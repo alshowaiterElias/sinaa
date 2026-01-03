@@ -97,6 +97,42 @@ class CategoriesRepository {
 
     return flat;
   }
+
+  /// Request a new category
+  Future<Category> requestCategory({
+    required String name,
+    required String nameAr,
+    String? icon,
+    int? parentId,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '${ApiEndpoints.categories}/request',
+        data: {
+          'name': name,
+          'nameAr': nameAr,
+          if (icon != null) 'icon': icon,
+          if (parentId != null) 'parentId': parentId,
+        },
+      );
+
+      final data = response.data['data'];
+      return Category.fromJson(data['category'] as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  /// Get my requested categories
+  Future<List<Category>> getMyRequests() async {
+    try {
+      final response = await _dio.get('${ApiEndpoints.categories}/my-requests');
+      final data = response.data['data']['categories'] as List;
+      return data.map((e) => Category.fromJson(e)).toList();
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
 }
 
 /// Category summary for product listing

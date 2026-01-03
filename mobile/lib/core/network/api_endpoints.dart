@@ -141,6 +141,9 @@ class ApiEndpoints {
   static String notificationRead(int id) => '/notifications/$id/read';
   static const String notificationsReadAll = '/notifications/read-all';
 
+  // Favorites endpoints
+  static const String favorites = '/favorites';
+
   // Health check
   static const String health = '/health';
 }

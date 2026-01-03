@@ -13,13 +13,13 @@ import { ERROR_CODES, PAGINATION } from '../config/constants';
 export const getCategories = asyncHandler(
   async (req: Request, res: Response) => {
     const { includeInactive } = req.query;
-    
+
     // Build where clause
-    const whereClause: { isActive?: boolean } = {};
-    
+    const whereClause: { status?: string } = {};
+
     // By default, only show active categories for public API
     if (includeInactive !== 'true') {
-      whereClause.isActive = true;
+      whereClause.status = 'active';
     }
 
     // Get parent categories with their children
@@ -32,7 +32,7 @@ export const getCategories = asyncHandler(
         {
           model: Category,
           as: 'children',
-          where: includeInactive === 'true' ? {} : { isActive: true },
+          where: includeInactive === 'true' ? {} : { status: 'active' },
           required: false,
           order: [['sortOrder', 'ASC']],
         },
@@ -60,7 +60,7 @@ export const getCategoryById = asyncHandler(
         {
           model: Category,
           as: 'children',
-          where: { isActive: true },
+          where: { status: 'active' },
           required: false,
           order: [['sortOrder', 'ASC']],
         },
@@ -77,7 +77,7 @@ export const getCategoryById = asyncHandler(
     }
 
     // Check if category is active (for public access)
-    if (!category.isActive) {
+    if (category.status !== 'active') {
       return sendError(res, ERROR_CODES.NOT_FOUND, 'Category not found', 404);
     }
 
@@ -96,8 +96,8 @@ export const getCategoryProducts = asyncHandler(
 
     // Verify category exists and is active
     const category = await Category.findByPk(id);
-    
-    if (!category || !category.isActive) {
+
+    if (!category || category.status !== 'active') {
       return sendError(res, ERROR_CODES.NOT_FOUND, 'Category not found', 404);
     }
 
@@ -372,7 +372,7 @@ export const reorderCategories = asyncHandler(
       ],
     });
 
-    sendSuccess(res, { 
+    sendSuccess(res, {
       message: 'Categories reordered successfully',
       categories,
     });
