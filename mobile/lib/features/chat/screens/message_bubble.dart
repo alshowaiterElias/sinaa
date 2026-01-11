@@ -32,59 +32,64 @@ class MessageBubble extends StatelessWidget {
     }
 
     return Padding(
-      padding: EdgeInsets.only(
-        left: isMe ? 60 : 0,
-        right: isMe ? 0 : 60,
+      padding: EdgeInsetsDirectional.only(
+        start: isMe ? 60 : 0,
+        end: isMe ? 0 : 60,
         bottom: 8,
       ),
-      child: Column(
-        crossAxisAlignment:
-            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: isMe ? AppColors.primary : AppColors.surface,
-              borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(18),
-                topRight: const Radius.circular(18),
-                bottomLeft: Radius.circular(isMe ? 18 : 4),
-                bottomRight: Radius.circular(isMe ? 4 : 18),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(8),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+      child: Align(
+        alignment: isMe
+            ? AlignmentDirectional.centerEnd
+            : AlignmentDirectional.centerStart,
+        child: Column(
+          crossAxisAlignment:
+              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: isMe ? AppColors.primary : AppColors.surface,
+                borderRadius: BorderRadiusDirectional.only(
+                  topStart: const Radius.circular(18),
+                  topEnd: const Radius.circular(18),
+                  bottomStart: Radius.circular(isMe ? 18 : 4),
+                  bottomEnd: Radius.circular(isMe ? 4 : 18),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(8),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: _buildContent(context),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _formatTime(message.createdAt),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+                if (isMe) ...[
+                  const SizedBox(width: 4),
+                  Icon(
+                    message.isRead ? Icons.done_all : Icons.done,
+                    size: 14,
+                    color: message.isRead
+                        ? AppColors.primary
+                        : AppColors.textTertiary,
+                  ),
+                ],
               ],
             ),
-            child: _buildContent(context),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _formatTime(message.createdAt),
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textTertiary,
-                ),
-              ),
-              if (isMe) ...[
-                const SizedBox(width: 4),
-                Icon(
-                  message.isRead ? Icons.done_all : Icons.done,
-                  size: 14,
-                  color: message.isRead
-                      ? AppColors.primary
-                      : AppColors.textTertiary,
-                ),
-              ],
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

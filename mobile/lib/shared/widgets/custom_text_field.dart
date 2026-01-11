@@ -106,6 +106,7 @@ class SearchTextField extends StatelessWidget {
   final void Function(String)? onChanged;
   final void Function(String)? onSubmitted;
   final VoidCallback? onFilterTap;
+  final VoidCallback? onClear;
   final bool autofocus;
 
   const SearchTextField({
@@ -115,6 +116,7 @@ class SearchTextField extends StatelessWidget {
     this.onChanged,
     this.onSubmitted,
     this.onFilterTap,
+    this.onClear,
     this.autofocus = false,
   });
 
@@ -144,8 +146,17 @@ class SearchTextField extends StatelessWidget {
             color: AppColors.textTertiary,
             size: 22,
           ),
-          suffixIcon: onFilterTap != null
-              ? GestureDetector(
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (onClear != null)
+                IconButton(
+                  icon: const Icon(Icons.close_rounded,
+                      color: AppColors.textTertiary, size: 20),
+                  onPressed: onClear,
+                ),
+              if (onFilterTap != null)
+                GestureDetector(
                   onTap: onFilterTap,
                   child: Container(
                     margin: const EdgeInsets.all(8),
@@ -160,8 +171,10 @@ class SearchTextField extends StatelessWidget {
                       size: 20,
                     ),
                   ),
-                )
-              : null,
+                ),
+              if (onFilterTap != null) const SizedBox(width: 4),
+            ],
+          ),
         ),
       ),
     );

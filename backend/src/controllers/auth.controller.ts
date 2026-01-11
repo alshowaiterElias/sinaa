@@ -22,7 +22,17 @@ import sequelize from '../config/database';
  * POST /auth/register
  */
 export const register = asyncHandler(async (req: Request, res: Response) => {
-  const { email, password, fullName, phone, language } = req.body;
+  const { email, password, fullName, phone, language, city, latitude, longitude, locationSharingEnabled } = req.body;
+
+  // Debug logging for location data
+  console.log('[REGISTER] Received location data:', {
+    city,
+    latitude,
+    longitude,
+    locationSharingEnabled,
+    latitudeType: typeof latitude,
+    longitudeType: typeof longitude,
+  });
 
   // Check if email already exists
   const existingUser = await User.findOne({ where: { email } });
@@ -33,15 +43,37 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   // Hash password
   const passwordHash = await hashPassword(password);
 
-  // Create user
-  const user = await User.create({
+  // Parse location coordinates
+  const parsedLatitude = latitude !== undefined && latitude !== null ? parseFloat(latitude) : null;
+  const parsedLongitude = longitude !== undefined && longitude !== null ? parseFloat(longitude) : null;
+  const hasLocation = parsedLatitude !== null && parsedLongitude !== null && !isNaN(parsedLatitude) && !isNaN(parsedLongitude);
+
+  console.log('[REGISTER] Parsed location:', {
+    parsedLatitude,
+    parsedLongitude,
+    hasLocation,
+    cityToSave: city || null,
+  });
+
+  // Create user data object explicitly
+  const userData = {
     email,
     passwordHash,
     fullName,
     phone: phone || null,
     language: language || 'ar',
+    city: city || null,
+    latitude: hasLocation ? parsedLatitude : null,
+    longitude: hasLocation ? parsedLongitude : null,
+    locationSharingEnabled: locationSharingEnabled !== false, // Default to true
+    locationUpdatedAt: hasLocation || city ? new Date() : null,
     role: USER_ROLES.CUSTOMER,
-  });
+  };
+
+  console.log('[REGISTER] Creating user with data:', userData);
+
+  // Create user
+  const user = await User.create(userData);
 
   // Generate tokens
   const tokenPayload: TokenPayload = {
@@ -87,6 +119,11 @@ export const registerProjectOwner = asyncHandler(
       longitude,
       workingHours,
       socialLinks,
+      // User location fields
+      userCity,
+      userLatitude,
+      userLongitude,
+      locationSharingEnabled,
     } = req.body;
 
     // Check if email already exists
@@ -111,6 +148,11 @@ export const registerProjectOwner = asyncHandler(
           phone: phone || null,
           language: language || 'ar',
           role: USER_ROLES.PROJECT_OWNER,
+          city: userCity || null,
+          latitude: userLatitude || null,
+          longitude: userLongitude || null,
+          locationSharingEnabled: locationSharingEnabled !== false,
+          locationUpdatedAt: userLatitude || userCity ? new Date() : null,
         },
         { transaction }
       );
@@ -124,6 +166,7 @@ export const registerProjectOwner = asyncHandler(
           city,
           description: description || null,
           descriptionAr: descriptionAr || null,
+          coverUrl: req.file ? `/uploads/projects/${req.file.filename}` : null,
           latitude: latitude || null,
           longitude: longitude || null,
           workingHours: workingHours || null,
@@ -309,15 +352,59 @@ export const getMe = asyncHandler(async (req: Request, res: Response) => {
  */
 export const updateMe = asyncHandler(async (req: Request, res: Response) => {
   const user = req.user!;
-  const { fullName, phone, language } = req.body;
+  const { fullName, phone, language, city, latitude, longitude, locationSharingEnabled, notificationsEnabled } = req.body;
+
+  console.log('[UPDATE_ME] Received:', { fullName, phone, language, city, latitude, longitude, locationSharingEnabled, notificationsEnabled });
 
   // Update fields
-  const updateData: Partial<{ fullName: string; phone: string | null; language: 'ar' | 'en' }> = {};
+  const updateData: Partial<{
+    fullName: string;
+    phone: string | null;
+    language: 'ar' | 'en';
+    city: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    locationSharingEnabled: boolean;
+    notificationsEnabled: boolean;
+    locationUpdatedAt: Date | null;
+  }> = {};
+
   if (fullName !== undefined) updateData.fullName = fullName;
   if (phone !== undefined) updateData.phone = phone;
   if (language !== undefined) updateData.language = language;
 
+  // Handle location fields
+  if (city !== undefined) {
+    updateData.city = city ? city.trim() : null;
+  }
+
+  if (latitude !== undefined && longitude !== undefined) {
+    const parsedLat = parseFloat(latitude);
+    const parsedLon = parseFloat(longitude);
+    console.log('[UPDATE_ME] Parsed coordinates:', { parsedLat, parsedLon });
+    if (!isNaN(parsedLat) && !isNaN(parsedLon)) {
+      updateData.latitude = parsedLat;
+      updateData.longitude = parsedLon;
+      updateData.locationUpdatedAt = new Date();
+    }
+  }
+
+  if (locationSharingEnabled !== undefined) {
+    updateData.locationSharingEnabled = Boolean(locationSharingEnabled);
+  }
+
+  if (notificationsEnabled !== undefined) {
+    updateData.notificationsEnabled = Boolean(notificationsEnabled);
+  }
+
+  console.log('[UPDATE_ME] Update data:', updateData);
+
   await user.update(updateData);
+
+  // Reload to get fresh data from DB
+  await user.reload();
+
+  console.log('[UPDATE_ME] User after update:', user.toSafeJSON());
 
   return sendSuccess(res, { user: user.toSafeJSON() }, 'Profile updated successfully');
 });

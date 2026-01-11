@@ -133,6 +133,16 @@ class NotificationsNotifier extends Notifier<NotificationsState> {
     }
   }
 
+  /// Clear all notifications
+  Future<void> clearAll() async {
+    try {
+      await _repository.deleteAll();
+      state = state.copyWith(notifications: [], unreadCount: 0);
+    } catch (e) {
+      // Handle error
+    }
+  }
+
   void _addNotification(AppNotification notification) {
     // Add to beginning of list
     final updated = [notification, ...state.notifications];

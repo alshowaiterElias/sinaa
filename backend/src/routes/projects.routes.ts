@@ -7,8 +7,9 @@ import {
     createProject,
     updateProject,
 } from '../controllers/projectController';
-import { authenticate, projectOwnerOnly } from '../middleware/auth';
+import { authenticate, projectOwnerOnly, optionalAuth } from '../middleware/auth';
 import { validate, projectValidations, commonValidations } from '../middleware/validate';
+import { upload, processProjectImage } from '../middleware/upload';
 
 const router = Router();
 
@@ -21,6 +22,7 @@ const router = Router();
  */
 router.get(
     '/',
+    optionalAuth,
     validate([commonValidations.page, commonValidations.limit]),
     getProjects
 );
@@ -54,6 +56,8 @@ router.post(
 router.put(
     '/:id',
     authenticate,
+    upload.single('coverImage'),
+    processProjectImage,
     validate(projectValidations.update),
     updateProject
 );

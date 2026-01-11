@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/theme.dart';
 import '../../data/models/category.dart';
 import '../../data/providers/categories_provider.dart';
+import '../../core/localization/app_localizations.dart';
 
 /// Category Grid Widget - Displays categories in a grid layout
 class CategoryGrid extends ConsumerWidget {
@@ -102,7 +103,7 @@ class CategoryGrid extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'فشل تحميل الفئات',
+            context.l10n.tr('failedToLoadCategories'),
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 8),
@@ -111,7 +112,7 @@ class CategoryGrid extends ConsumerWidget {
               ref.read(categoriesStateProvider.notifier).refresh();
             },
             icon: const Icon(Icons.refresh_rounded),
-            label: const Text('إعادة المحاولة'),
+            label: Text(context.l10n.tr('retry')),
           ),
         ],
       ),
@@ -130,7 +131,7 @@ class CategoryGrid extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'لا توجد فئات',
+            context.l10n.tr('noCategories'),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.textTertiary,
                 ),
@@ -191,7 +192,8 @@ class CategoryCard extends StatelessWidget {
                 child: Icon(
                   _getCategoryIcon(category.iconName),
                   size: 24,
-                  color: isSelected ? AppColors.textOnPrimary : AppColors.primary,
+                  color:
+                      isSelected ? AppColors.textOnPrimary : AppColors.primary,
                 ),
               ),
 
@@ -205,8 +207,9 @@ class CategoryCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
                         fontWeight:
                             isSelected ? FontWeight.w600 : FontWeight.w500,
-                        color:
-                            isSelected ? AppColors.primary : AppColors.textPrimary,
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.textPrimary,
                       ),
                   textAlign: TextAlign.center,
                   maxLines: 2,
@@ -218,7 +221,7 @@ class CategoryCard extends StatelessWidget {
               if (showSubCount && category.hasChildren) ...[
                 const SizedBox(height: 4),
                 Text(
-                  '${category.children.length} فئة فرعية',
+                  '${category.children.length} ${context.l10n.tr('subCategories')}',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: AppColors.textTertiary,
                       ),
@@ -340,4 +343,3 @@ class CategoryHorizontalList extends ConsumerWidget {
     );
   }
 }
-

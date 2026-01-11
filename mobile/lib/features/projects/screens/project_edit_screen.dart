@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../config/routes.dart';
 import '../../../config/theme.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/network/api_endpoints.dart';
 import '../../../data/providers/projects_provider.dart';
 
 class ProjectEditScreen extends ConsumerStatefulWidget {
@@ -20,6 +23,31 @@ class _ProjectEditScreenState extends ConsumerState<ProjectEditScreen> {
   late TextEditingController _descriptionController;
   late TextEditingController _descriptionArController;
   late TextEditingController _cityController;
+  File? _coverImage;
+
+  Future<void> _pickImage() async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+      if (pickedFile != null) {
+        setState(() {
+          _coverImage = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error picking image: $e');
+      if (mounted) {
+        final l10n = context.l10n;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${l10n.tr('error')}: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -57,7 +85,7 @@ class _ProjectEditScreenState extends ConsumerState<ProjectEditScreen> {
         'description': _descriptionController.text,
         'descriptionAr': _descriptionArController.text,
         'city': _cityController.text,
-      });
+      }, coverImage: _coverImage);
 
       scaffoldMessenger.showSnackBar(
         SnackBar(content: Text(l10n.tr('project.updateSuccess'))),
@@ -148,6 +176,57 @@ class _ProjectEditScreenState extends ConsumerState<ProjectEditScreen> {
                 ],
               ),
             ),
+
+            // Cover Image
+            GestureDetector(
+              onTap: _pickImage,
+              child: Container(
+                height: 150,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.divider),
+                  image: _coverImage != null
+                      ? DecorationImage(
+                          image: FileImage(_coverImage!),
+                          fit: BoxFit.cover,
+                        )
+                      : (ref.read(myProjectProvider).project?.coverUrl != null
+                          ? DecorationImage(
+                              image: NetworkImage(ApiEndpoints.imageUrl(ref
+                                  .read(myProjectProvider)
+                                  .project!
+                                  .coverUrl!)),
+                              fit: BoxFit.cover,
+                            )
+                          : null),
+                ),
+                child: (_coverImage == null &&
+                        ref.read(myProjectProvider).project?.coverUrl == null)
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.add_photo_alternate_outlined,
+                            size: 40,
+                            color: AppColors.textTertiary,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            l10n.tr('project.addCoverImage'),
+                            style: TextStyle(
+                              color: AppColors.textTertiary,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      )
+                    : null,
+              ),
+            ),
+
+            const SizedBox(height: 24),
 
             // Basic Info
             Text(

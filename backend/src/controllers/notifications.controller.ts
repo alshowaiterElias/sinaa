@@ -127,3 +127,20 @@ export const deleteNotification = async (req: Request, res: Response, next: Next
         next(error);
     }
 };
+
+/**
+ * Delete all notifications for the current user
+ */
+export const deleteAll = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user!.id;
+
+        await Notification.destroy({
+            where: { userId },
+        });
+
+        return sendSuccess(res, null, 'All notifications deleted');
+    } catch (error) {
+        next(error);
+    }
+};

@@ -48,7 +48,6 @@ class _SupportTicketsScreenState extends ConsumerState<SupportTicketsScreen> {
       body: _buildBody(state, l10n, isRtl),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(Routes.createTicket),
-        icon: const Icon(Icons.add),
         label: Text(l10n.tr('newTicket')),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,

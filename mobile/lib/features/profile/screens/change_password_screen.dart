@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config/theme.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/validators.dart';
 import '../../../data/providers/auth_provider.dart';
 import '../../../shared/widgets/custom_text_field.dart';
@@ -12,7 +13,8 @@ class ChangePasswordScreen extends ConsumerStatefulWidget {
   const ChangePasswordScreen({super.key});
 
   @override
-  ConsumerState<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
+  ConsumerState<ChangePasswordScreen> createState() =>
+      _ChangePasswordScreenState();
 }
 
 class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
@@ -20,7 +22,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   bool _obscureCurrentPassword = true;
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
@@ -48,7 +50,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('تم تغيير كلمة المرور بنجاح'),
+            content: Text(context.l10n.tr('passwordChangedSuccess')),
             backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -83,7 +85,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('تغيير كلمة المرور'),
+        title: Text(context.l10n.tr('changePassword')),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -117,7 +119,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               // Info text
               Center(
                 child: Text(
-                  'أدخل كلمة المرور الحالية والجديدة',
+                  context.l10n.tr('enterCurrentAndNewPassword'),
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -130,8 +132,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               // Current password
               CustomTextField(
                 controller: _currentPasswordController,
-                label: 'كلمة المرور الحالية',
-                hint: '••••••••',
+                label: context.l10n.tr('currentPassword'),
+                hint: context.l10n.tr('passwordHint'),
                 obscureText: _obscureCurrentPassword,
                 prefixIcon: Icons.lock_outline_rounded,
                 suffixIcon: IconButton(
@@ -149,7 +151,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'يرجى إدخال كلمة المرور الحالية';
+                    return context.l10n.tr('currentPasswordRequired');
                   }
                   return null;
                 },
@@ -160,7 +162,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               // New password
               CustomTextField(
                 controller: _newPasswordController,
-                label: 'كلمة المرور الجديدة',
+                label: context.l10n.tr('newPassword'),
                 hint: 'Abc12345',
                 obscureText: _obscureNewPassword,
                 prefixIcon: Icons.lock_reset_rounded,
@@ -184,7 +186,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 8, right: 4),
                 child: Text(
-                  '8 أحرف على الأقل، حرف كبير، حرف صغير، ورقم',
+                  context.l10n.tr('passwordRequirements'),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.textTertiary,
                       ),
@@ -196,8 +198,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               // Confirm new password
               CustomTextField(
                 controller: _confirmPasswordController,
-                label: 'تأكيد كلمة المرور الجديدة',
-                hint: '••••••••',
+                label: context.l10n.tr('confirmNewPassword'),
+                hint: context.l10n.tr('passwordHint'),
                 obscureText: _obscureConfirmPassword,
                 prefixIcon: Icons.lock_outline_rounded,
                 suffixIcon: IconButton(
@@ -213,8 +215,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                     color: AppColors.textTertiary,
                   ),
                 ),
-                validator: (value) =>
-                    Validators.confirmPassword(value, _newPasswordController.text),
+                validator: (value) => Validators.confirmPassword(
+                    value, _newPasswordController.text),
               ),
 
               const SizedBox(height: 40),
@@ -223,7 +225,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               LoadingButton(
                 onPressed: _handleChangePassword,
                 isLoading: _isLoading,
-                text: 'تغيير كلمة المرور',
+                text: context.l10n.tr('changePassword'),
               ),
 
               const SizedBox(height: 24),
@@ -232,7 +234,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               Center(
                 child: TextButton(
                   onPressed: () => context.push('/forgot-password'),
-                  child: const Text('نسيت كلمة المرور؟'),
+                  child: Text(context.l10n.tr('forgotPassword')),
                 ),
               ),
             ],
@@ -242,4 +244,3 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     );
   }
 }
-

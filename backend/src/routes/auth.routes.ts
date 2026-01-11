@@ -14,6 +14,7 @@ import {
 } from '../controllers/auth.controller';
 import { authenticate } from '../middleware/auth';
 import { validate, authValidations } from '../middleware/validate';
+import { upload, processProjectImage } from '../middleware/upload';
 
 const router = Router();
 
@@ -21,6 +22,8 @@ const router = Router();
 router.post('/register', validate(authValidations.register), register);
 router.post(
   '/register/project-owner',
+  upload.single('coverImage'),
+  processProjectImage,
   validate(authValidations.registerProjectOwner),
   registerProjectOwner
 );

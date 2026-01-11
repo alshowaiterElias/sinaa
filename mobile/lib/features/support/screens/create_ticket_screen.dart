@@ -9,7 +9,14 @@ import '../../../data/providers/support_provider.dart';
 
 /// Create new support ticket screen
 class CreateTicketScreen extends ConsumerStatefulWidget {
-  const CreateTicketScreen({super.key});
+  final String? initialSubject;
+  final String? initialDescription;
+
+  const CreateTicketScreen({
+    super.key,
+    this.initialSubject,
+    this.initialDescription,
+  });
 
   @override
   ConsumerState<CreateTicketScreen> createState() => _CreateTicketScreenState();
@@ -17,10 +24,18 @@ class CreateTicketScreen extends ConsumerStatefulWidget {
 
 class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _subjectController = TextEditingController();
-  final _descriptionController = TextEditingController();
+  late final TextEditingController _subjectController;
+  late final TextEditingController _descriptionController;
   TicketType _selectedType = TicketType.general;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _subjectController = TextEditingController(text: widget.initialSubject);
+    _descriptionController =
+        TextEditingController(text: widget.initialDescription);
+  }
 
   @override
   void dispose() {
@@ -156,7 +171,7 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
 
             // Submit button
             SizedBox(
-              height: 50,
+              height: 80,
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _submitTicket,
                 style: ElevatedButton.styleFrom(

@@ -240,20 +240,6 @@ class _MyProjectScreenState extends ConsumerState<MyProjectScreen> {
                           );
                         },
                       ),
-                      _ActionCard(
-                        icon: Icons.access_time,
-                        title: context.tr('project.workingHours'),
-                        onTap: () {
-                          // Navigate to working hours
-                        },
-                      ),
-                      _ActionCard(
-                        icon: Icons.link,
-                        title: context.tr('project.socialLinks'),
-                        onTap: () {
-                          // Navigate to social links
-                        },
-                      ),
                     ],
                   ),
                 ],

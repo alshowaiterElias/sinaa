@@ -10,11 +10,15 @@ import '../../../data/providers/reviews_provider.dart';
 class ProductReviewsSection extends ConsumerWidget {
   final int productId;
   final bool isRtl;
+  final bool isOwner;
+  final Function(Review)? onReportComment;
 
   const ProductReviewsSection({
     super.key,
     required this.productId,
     required this.isRtl,
+    this.isOwner = false,
+    this.onReportComment,
   });
 
   @override
@@ -325,6 +329,29 @@ class ProductReviewsSection extends ConsumerWidget {
               style: TextStyle(
                 color: AppColors.textSecondary,
                 height: 1.5,
+              ),
+            ),
+          ],
+
+          if (isOwner && onReportComment != null) ...[
+            const SizedBox(height: 12),
+            const Divider(),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton.icon(
+                onPressed: () => onReportComment!(review),
+                icon: const Icon(Icons.flag_outlined,
+                    size: 18, color: Colors.red),
+                label: Text(
+                  isRtl ? 'إبلاغ عن تعليق' : 'Report Comment',
+                  style: const TextStyle(color: Colors.red),
+                ),
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
               ),
             ),
           ],

@@ -61,11 +61,6 @@ class ProfileScreen extends ConsumerWidget {
                         onTap: () => context.push(Routes.myProject),
                       ),
                       _MenuItem(
-                        icon: Icons.inventory_2_rounded,
-                        label: l10n.tr('products'),
-                        onTap: () {},
-                      ),
-                      _MenuItem(
                         icon: Icons.analytics_rounded,
                         label: l10n.tr('profile.statistics'),
                         onTap: () {},
@@ -117,7 +112,16 @@ class ProfileScreen extends ConsumerWidget {
                     _MenuItem(
                       icon: Icons.notifications_outlined,
                       label: l10n.tr('notifications'),
-                      onTap: () {},
+                      onTap: () {}, // Toggle logic handled in trailing
+                      trailing: Switch(
+                        value: user?.notificationsEnabled ?? true,
+                        onChanged: (value) {
+                          ref
+                              .read(authStateProvider.notifier)
+                              .updateProfile(notificationsEnabled: value);
+                        },
+                        activeColor: AppColors.primary,
+                      ),
                     ),
                     _MenuItem(
                       icon: Icons.language_rounded,
@@ -143,28 +147,6 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                       onTap: () => _showLanguageSheet(context, ref),
                     ),
-                    _MenuItem(
-                      icon: Icons.dark_mode_outlined,
-                      label: l10n.tr('appearance'),
-                      trailing: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceVariant,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          l10n.tr('lightMode'),
-                          style:
-                              Theme.of(context).textTheme.labelMedium?.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
-                        ),
-                      ),
-                      onTap: () {},
-                    ),
                   ],
                 ),
 
@@ -182,17 +164,17 @@ class ProfileScreen extends ConsumerWidget {
                     _MenuItem(
                       icon: Icons.chat_bubble_outline_rounded,
                       label: l10n.tr('contactUs'),
-                      onTap: () {},
+                      onTap: () => context.push('/support/contact'),
                     ),
                     _MenuItem(
                       icon: Icons.policy_outlined,
                       label: l10n.tr('privacyPolicy'),
-                      onTap: () {},
+                      onTap: () => context.push('/support/privacy'),
                     ),
                     _MenuItem(
                       icon: Icons.description_outlined,
                       label: l10n.tr('termsOfService'),
-                      onTap: () {},
+                      onTap: () => context.push('/support/terms'),
                     ),
                   ],
                 ),

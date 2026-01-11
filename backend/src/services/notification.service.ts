@@ -1,5 +1,6 @@
 import { Server } from 'socket.io';
 import Notification, { NotificationType, NotificationData, NotificationCreationAttributes } from '../models/Notification';
+import User from '../models/User';
 import logger from '../utils/logger';
 
 // Store Socket.io instance for real-time notifications
@@ -40,6 +41,13 @@ export async function createNotification(params: {
         });
 
         logger.info(`Notification created with ID: ${notification.id}`);
+
+        // Check if user has notifications enabled
+        const user = await User.findByPk(params.userId);
+        if (user && !user.notificationsEnabled) {
+            logger.info(`User ${params.userId} has notifications disabled. Skipping real-time emission.`);
+            return notification;
+        }
 
         // Emit real-time notification
         if (io) {

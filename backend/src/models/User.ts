@@ -10,6 +10,12 @@ export interface UserAttributes {
   phone: string | null;
   fullName: string;
   avatarUrl: string | null;
+  city: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  locationSharingEnabled: boolean;
+  notificationsEnabled: boolean;
+  locationUpdatedAt: Date | null;
   role: UserRole;
   language: 'ar' | 'en';
   isActive: boolean;
@@ -27,6 +33,12 @@ export interface UserCreationAttributes
     | 'id'
     | 'phone'
     | 'avatarUrl'
+    | 'city'
+    | 'latitude'
+    | 'longitude'
+    | 'locationSharingEnabled'
+    | 'notificationsEnabled'
+    | 'locationUpdatedAt'
     | 'role'
     | 'language'
     | 'isActive'
@@ -45,6 +57,12 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public phone!: string | null;
   public fullName!: string;
   public avatarUrl!: string | null;
+  public city!: string | null;
+  public latitude!: number | null;
+  public longitude!: number | null;
+  public locationSharingEnabled!: boolean;
+  public notificationsEnabled!: boolean;
+  public locationUpdatedAt!: Date | null;
   public role!: UserRole;
   public language!: 'ar' | 'en';
   public isActive!: boolean;
@@ -112,6 +130,33 @@ User.init(
       allowNull: true,
       field: 'avatar_url',
     },
+    city: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    latitude: {
+      type: DataTypes.DECIMAL(10, 8),
+      allowNull: true,
+    },
+    longitude: {
+      type: DataTypes.DECIMAL(11, 8),
+      allowNull: true,
+    },
+    locationSharingEnabled: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      field: 'location_sharing_enabled',
+    },
+    notificationsEnabled: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      field: 'notifications_enabled',
+    },
+    locationUpdatedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'location_updated_at',
+    },
     role: {
       type: DataTypes.ENUM(...Object.values(USER_ROLES)),
       defaultValue: USER_ROLES.CUSTOMER,
@@ -158,6 +203,8 @@ User.init(
       { fields: ['email'] },
       { fields: ['role'] },
       { fields: ['is_active'] },
+      { fields: ['city'] },
+      { fields: ['latitude', 'longitude'] },
     ],
   }
 );

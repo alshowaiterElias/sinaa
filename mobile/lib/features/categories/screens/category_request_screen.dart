@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../data/models/category.dart';
 import '../../../data/repositories/categories_repository.dart';
+import '../../../core/localization/app_localizations.dart';
 
 class CategoryRequestScreen extends ConsumerStatefulWidget {
   const CategoryRequestScreen({super.key});
@@ -52,7 +53,7 @@ class _CategoryRequestScreenState extends ConsumerState<CategoryRequestScreen>
       if (mounted) {
         setState(() => _isLoadingRequests = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading requests: $e')),
+          SnackBar(content: Text('${context.l10n.tr('error')}: $e')),
         );
       }
     }
@@ -85,8 +86,8 @@ class _CategoryRequestScreenState extends ConsumerState<CategoryRequestScreen>
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Category request submitted successfully'),
+          SnackBar(
+            content: Text(context.l10n.tr('categoryRequestSubmitted')),
             backgroundColor: Colors.green,
           ),
         );
@@ -100,7 +101,9 @@ class _CategoryRequestScreenState extends ConsumerState<CategoryRequestScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('${context.l10n.tr('error')}: $e'),
+              backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -114,12 +117,12 @@ class _CategoryRequestScreenState extends ConsumerState<CategoryRequestScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Category Requests'),
+        title: Text(context.l10n.tr('categoryRequests')),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'New Request'),
-            Tab(text: 'My Requests'),
+          tabs: [
+            Tab(text: context.l10n.tr('newRequest')),
+            Tab(text: context.l10n.tr('myRequests')),
           ],
         ),
       ),
@@ -141,9 +144,9 @@ class _CategoryRequestScreenState extends ConsumerState<CategoryRequestScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Request a New Category',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              context.l10n.tr('requestNewCategory'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             const SizedBox(height: 8),
@@ -160,7 +163,7 @@ class _CategoryRequestScreenState extends ConsumerState<CategoryRequestScreen>
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Note: Categories approved here will be visible to all users of the app.',
+                      context.l10n.tr('categoryRequestNote'),
                       style: TextStyle(color: Colors.blue.shade900),
                     ),
                   ),
@@ -170,14 +173,14 @@ class _CategoryRequestScreenState extends ConsumerState<CategoryRequestScreen>
             const SizedBox(height: 24),
             TextFormField(
               controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Category Name (English)',
+              decoration: InputDecoration(
+                labelText: context.l10n.tr('categoryNameEn'),
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.language),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter English name';
+                  return context.l10n.tr('enterEnglishName');
                 }
                 return null;
               },
@@ -185,14 +188,14 @@ class _CategoryRequestScreenState extends ConsumerState<CategoryRequestScreen>
             const SizedBox(height: 16),
             TextFormField(
               controller: _nameArController,
-              decoration: const InputDecoration(
-                labelText: 'Category Name (Arabic)',
+              decoration: InputDecoration(
+                labelText: context.l10n.tr('categoryNameAr'),
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.translate),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter Arabic name';
+                  return context.l10n.tr('enterArabicName');
                 }
                 return null;
               },
@@ -200,15 +203,15 @@ class _CategoryRequestScreenState extends ConsumerState<CategoryRequestScreen>
             const SizedBox(height: 16),
             DropdownButtonFormField<Category>(
               value: _selectedParent,
-              decoration: const InputDecoration(
-                labelText: 'Parent Category (Optional)',
+              decoration: InputDecoration(
+                labelText: context.l10n.tr('parentCategoryOptional'),
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.folder_open),
               ),
               items: [
-                const DropdownMenuItem<Category>(
+                DropdownMenuItem<Category>(
                   value: null,
-                  child: Text('None (Main Category)'),
+                  child: Text(context.l10n.tr('noneMainCategory')),
                 ),
                 ..._parentCategories.map((category) {
                   return DropdownMenuItem<Category>(
@@ -224,11 +227,11 @@ class _CategoryRequestScreenState extends ConsumerState<CategoryRequestScreen>
             const SizedBox(height: 16),
             TextFormField(
               controller: _iconController,
-              decoration: const InputDecoration(
-                labelText: 'Icon Name (Optional)',
+              decoration: InputDecoration(
+                labelText: context.l10n.tr('iconNameOptional'),
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.image),
-                hintText: 'e.g., restaurant, home, etc.',
+                hintText: context.l10n.tr('iconHint'),
               ),
             ),
             const SizedBox(height: 32),
@@ -243,7 +246,7 @@ class _CategoryRequestScreenState extends ConsumerState<CategoryRequestScreen>
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Submit Request'),
+                  : Text(context.l10n.tr('submitRequest')),
             ),
           ],
         ),
@@ -263,14 +266,14 @@ class _CategoryRequestScreenState extends ConsumerState<CategoryRequestScreen>
           children: [
             const Icon(Icons.history, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
-            const Text(
-              'No requests yet',
+            Text(
+              context.l10n.tr('noRequestsYet'),
               style: TextStyle(fontSize: 18, color: Colors.grey),
             ),
             const SizedBox(height: 8),
             TextButton(
               onPressed: () => _tabController.animateTo(0),
-              child: const Text('Make a request'),
+              child: Text(context.l10n.tr('makeRequest')),
             ),
           ],
         ),
@@ -367,7 +370,7 @@ class _CategoryRequestScreenState extends ConsumerState<CategoryRequestScreen>
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Reason: ${category.rejectionReason}',
+                              '${context.l10n.tr('rejectionReason')}: ${category.rejectionReason}',
                               style: const TextStyle(color: Colors.red),
                             ),
                           ),
@@ -391,16 +394,16 @@ class _CategoryRequestScreenState extends ConsumerState<CategoryRequestScreen>
     switch (status) {
       case 'active':
         color = Colors.green;
-        text = 'Approved';
+        text = context.l10n.tr('approved');
         break;
       case 'rejected':
         color = Colors.red;
-        text = 'Rejected';
+        text = context.l10n.tr('rejected');
         break;
       case 'pending':
       default:
         color = Colors.orange;
-        text = 'Pending';
+        text = context.l10n.tr('pending');
         break;
     }
 

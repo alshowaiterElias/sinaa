@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth';
+import { authenticate, optionalAuth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { body, query, param } from 'express-validator';
 import {
@@ -35,7 +35,7 @@ const productValidation = [
 ];
 
 // Public routes
-router.get('/', getAllProducts);
+router.get('/', optionalAuth, getAllProducts);
 router.get('/nearby', getNearbyProducts);
 router.get('/:id', getProductById);
 

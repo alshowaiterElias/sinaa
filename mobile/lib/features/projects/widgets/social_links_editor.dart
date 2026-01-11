@@ -28,7 +28,6 @@ class _SocialLinksEditorState extends ConsumerState<SocialLinksEditor> {
     'facebook',
     'twitter',
     'instagram',
-    'linkedin',
     'whatsapp',
   ];
 
@@ -112,8 +111,6 @@ class _SocialLinksEditorState extends ConsumerState<SocialLinksEditor> {
         return Icons.alternate_email; // Placeholder for X
       case 'instagram':
         return Icons.camera_alt;
-      case 'linkedin':
-        return Icons.business;
       case 'whatsapp':
         return Icons.chat;
       default:
@@ -165,6 +162,15 @@ class _SocialLinksEditorState extends ConsumerState<SocialLinksEditor> {
                 hintText: 'https://...',
               ),
               keyboardType: TextInputType.url,
+              validator: (value) {
+                if (value != null && value.isNotEmpty) {
+                  if (!value.startsWith('http://') &&
+                      !value.startsWith('https://')) {
+                    return l10n.tr('invalidUrl');
+                  }
+                }
+                return null;
+              },
             );
           },
         ),

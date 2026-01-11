@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -192,13 +193,18 @@ class MyProjectNotifier extends Notifier<MyProjectState> {
     }
   }
 
-  Future<void> updateProject(Map<String, dynamic> data) async {
+  Future<void> updateProject(Map<String, dynamic> data,
+      {File? coverImage}) async {
     if (state.project == null) return;
 
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final project = await _repository.updateProject(state.project!.id, data);
+      final project = await _repository.updateProject(
+        state.project!.id,
+        data,
+        coverImage: coverImage,
+      );
       state = state.copyWith(
         project: project,
         isLoading: false,
@@ -245,4 +251,80 @@ final projectProductsProvider =
   final repository = ref.read(projectsRepositoryProvider);
   final response = await repository.getProjectProducts(projectId);
   return response.products;
+});
+
+/// Nearby projects state for location-based listing
+class NearbyProjectsState {
+  final List<Project> projects;
+  final bool isLoading;
+  final String? error;
+
+  const NearbyProjectsState({
+    this.projects = const [],
+    this.isLoading = false,
+    this.error,
+  });
+
+  NearbyProjectsState copyWith({
+    List<Project>? projects,
+    bool? isLoading,
+    String? error,
+  }) {
+    return NearbyProjectsState(
+      projects: projects ?? this.projects,
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
+    );
+  }
+}
+
+/// Nearby projects notifier - loads projects sorted by distance from user
+class NearbyProjectsNotifier extends Notifier<NearbyProjectsState> {
+  late ProjectsRepository _repository;
+
+  @override
+  NearbyProjectsState build() {
+    _repository = ref.watch(projectsRepositoryProvider);
+    return const NearbyProjectsState();
+  }
+
+  /// Load nearby projects using user's location
+  Future<void> loadNearbyProjects({
+    required double lat,
+    required double lon,
+    double radius = 50,
+  }) async {
+    if (state.isLoading) return;
+
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      debugPrint(
+          '[NEARBY] Loading projects near: $lat, $lon (radius: $radius km)');
+      final response = await _repository.getProjects(
+        lat: lat,
+        lon: lon,
+        radius: radius,
+        sortBy: 'distance',
+        limit: 10,
+      );
+
+      debugPrint('[NEARBY] Got ${response.projects.length} nearby projects');
+      state = state.copyWith(
+        projects: response.projects,
+        isLoading: false,
+      );
+    } catch (e) {
+      debugPrint('[NEARBY] Error loading nearby projects: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
+    }
+  }
+}
+
+final nearbyProjectsProvider =
+    NotifierProvider<NearbyProjectsNotifier, NearbyProjectsState>(() {
+  return NearbyProjectsNotifier();
 });

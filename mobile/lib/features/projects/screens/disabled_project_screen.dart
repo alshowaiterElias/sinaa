@@ -16,7 +16,7 @@ class DisabledProjectScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Project Disabled'), // TODO: Localize
+        title: Text(l10n.tr('projectDisabled')),
       ),
       body: Center(
         child: Padding(
@@ -31,7 +31,7 @@ class DisabledProjectScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'Your project has been disabled', // TODO: Localize
+                l10n.tr('projectDisabledMessage'),
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -39,7 +39,7 @@ class DisabledProjectScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                project?.disableReason ?? 'No reason provided',
+                project?.disableReason ?? l10n.tr('noReasonProvided'),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -50,7 +50,7 @@ class DisabledProjectScreen extends ConsumerWidget {
                 onPressed: () {
                   // TODO: Implement contact support or similar
                 },
-                child: const Text('Contact Support'), // TODO: Localize
+                child: Text(l10n.tr('contactSupport')),
               ),
               const SizedBox(height: 16),
               TextButton(

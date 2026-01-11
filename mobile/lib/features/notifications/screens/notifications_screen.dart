@@ -99,8 +99,21 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           .loadNotifications(refresh: true),
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: state.notifications.length,
+        itemCount: state.notifications.length + 1,
         itemBuilder: (context, index) {
+          if (index == state.notifications.length) {
+            return Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: TextButton.icon(
+                onPressed: () => _showClearAllConfirmation(context, l10n),
+                icon: const Icon(Icons.delete_sweep, color: AppColors.error),
+                label: Text(
+                  l10n.tr('clearAll'), // TODO: Add key or use hardcoded for now
+                  style: const TextStyle(color: AppColors.error),
+                ),
+              ),
+            );
+          }
           final notification = state.notifications[index];
           return NotificationItem(
             notification: notification,
@@ -254,5 +267,31 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         context.push(Routes.myProject);
         break;
     }
+  }
+
+  void _showClearAllConfirmation(BuildContext context, AppLocalizations l10n) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.tr('clearAllNotifications')),
+        content: Text(l10n.tr('clearAllNotificationsConfirm')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.tr('cancel')),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ref.read(notificationsProvider.notifier).clearAll();
+            },
+            child: Text(
+              l10n.tr('delete'),
+              style: const TextStyle(color: AppColors.error),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

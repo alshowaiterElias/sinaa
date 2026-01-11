@@ -36,6 +36,12 @@ class User extends Equatable {
   final String fullName;
   final String? phone;
   final String? avatarUrl;
+  final String? city;
+  final double? latitude;
+  final double? longitude;
+  final bool locationSharingEnabled;
+  final bool notificationsEnabled;
+  final DateTime? locationUpdatedAt;
   final UserRole role;
   final String language;
   final bool isActive;
@@ -50,6 +56,12 @@ class User extends Equatable {
     required this.fullName,
     this.phone,
     this.avatarUrl,
+    this.city,
+    this.latitude,
+    this.longitude,
+    this.locationSharingEnabled = true,
+    this.notificationsEnabled = true,
+    this.locationUpdatedAt,
     required this.role,
     required this.language,
     required this.isActive,
@@ -67,6 +79,18 @@ class User extends Equatable {
       fullName: json['fullName'] as String,
       phone: json['phone'] as String?,
       avatarUrl: json['avatarUrl'] as String?,
+      city: json['city'] as String?,
+      latitude: json['latitude'] != null
+          ? double.tryParse(json['latitude'].toString())
+          : null,
+      longitude: json['longitude'] != null
+          ? double.tryParse(json['longitude'].toString())
+          : null,
+      locationSharingEnabled: json['locationSharingEnabled'] as bool? ?? true,
+      notificationsEnabled: json['notificationsEnabled'] as bool? ?? true,
+      locationUpdatedAt: json['locationUpdatedAt'] != null
+          ? DateTime.parse(json['locationUpdatedAt'] as String)
+          : null,
       role: UserRole.fromString(json['role'] as String? ?? 'customer'),
       language: json['language'] as String? ?? 'ar',
       isActive: json['isActive'] as bool? ?? true,
@@ -89,6 +113,12 @@ class User extends Equatable {
       'fullName': fullName,
       'phone': phone,
       'avatarUrl': avatarUrl,
+      'city': city,
+      'latitude': latitude,
+      'longitude': longitude,
+      'locationSharingEnabled': locationSharingEnabled,
+      'notificationsEnabled': notificationsEnabled,
+      'locationUpdatedAt': locationUpdatedAt?.toIso8601String(),
       'role': role.toJson(),
       'language': language,
       'isActive': isActive,
@@ -106,6 +136,12 @@ class User extends Equatable {
     String? fullName,
     String? phone,
     String? avatarUrl,
+    String? city,
+    double? latitude,
+    double? longitude,
+    bool? locationSharingEnabled,
+    bool? notificationsEnabled,
+    DateTime? locationUpdatedAt,
     UserRole? role,
     String? language,
     bool? isActive,
@@ -120,6 +156,13 @@ class User extends Equatable {
       fullName: fullName ?? this.fullName,
       phone: phone ?? this.phone,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      city: city ?? this.city,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      locationSharingEnabled:
+          locationSharingEnabled ?? this.locationSharingEnabled,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      locationUpdatedAt: locationUpdatedAt ?? this.locationUpdatedAt,
       role: role ?? this.role,
       language: language ?? this.language,
       isActive: isActive ?? this.isActive,
@@ -151,6 +194,9 @@ class User extends Equatable {
     return fullName.isNotEmpty ? fullName[0].toUpperCase() : '?';
   }
 
+  /// Check if user has location data
+  bool get hasLocation => latitude != null && longitude != null;
+
   @override
   List<Object?> get props => [
         id,
@@ -158,6 +204,11 @@ class User extends Equatable {
         fullName,
         phone,
         avatarUrl,
+        city,
+        latitude,
+        longitude,
+        locationSharingEnabled,
+        notificationsEnabled,
         role,
         language,
         isActive,

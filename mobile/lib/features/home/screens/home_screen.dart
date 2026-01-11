@@ -31,9 +31,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Load categories, projects, products, and notification count when the home screen is initialized
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(categoriesStateProvider.notifier).loadCategories();
-      ref.read(projectsStateProvider.notifier).loadProjects();
       ref.read(featuredProductsProvider.notifier).loadFeaturedProducts();
       ref.read(notificationsProvider.notifier).loadUnreadCount();
+
+      // Load nearby projects using user location if available
+      final user = ref.read(currentUserProvider);
+      if (user != null && user.hasLocation && user.locationSharingEnabled) {
+        ref.read(nearbyProjectsProvider.notifier).loadNearbyProjects(
+              lat: user.latitude!,
+              lon: user.longitude!,
+            );
+      } else {
+        // Fallback to regular projects list
+        ref.read(projectsStateProvider.notifier).loadProjects();
+      }
+
       debugPrint(
           '[HOME] Loaded categories, projects, featured products, and notification count');
     });
@@ -44,7 +56,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final user = ref.watch(currentUserProvider);
     final categoriesState = ref.watch(categoriesStateProvider);
     final projectsState = ref.watch(projectsStateProvider);
+    final nearbyState = ref.watch(nearbyProjectsProvider);
     final l10n = context.l10n;
+
+    // Determine if we should use nearby projects or regular projects
+    final hasUserLocation =
+        user != null && user.hasLocation && user.locationSharingEnabled == true;
 
     // Initialize socket and notification listeners when logged in
     ref.watch(socketInitProvider);
@@ -140,17 +157,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                 // Featured products
                 _buildSectionHeader(context, l10n.tr('featuredProducts'),
-                    onSeeAll: () {}),
+                    onSeeAll: () {
+                  context.push(Routes.productList);
+                }),
                 const SizedBox(height: 16),
                 _buildFeaturedProducts(context),
 
                 const SizedBox(height: 32),
 
-                // Nearby projects
+                // Nearby projects - use location-based if available
                 _buildSectionHeader(context, l10n.tr('nearbyProjects'),
-                    onSeeAll: () {}),
+                    onSeeAll: () {
+                  context.push(Routes.projectList);
+                }),
                 const SizedBox(height: 16),
-                _buildNearbyProjects(context, projectsState),
+                hasUserLocation
+                    ? _buildNearbyProjectsWithDistance(context, nearbyState)
+                    : _buildNearbyProjects(context, projectsState),
 
                 const SizedBox(height: 100),
               ],
@@ -770,22 +793,83 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final projects = projectsState.projects.take(5).toList();
 
     return SizedBox(
-      height: 300, // Increased height to fix overflow
+      height: 300,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: projects.length,
         itemBuilder: (context, index) {
+          final project = projects[index];
+          debugPrint(
+              '[HOME] Rendering project: ${project.name}, OwnerId: ${project.ownerId}');
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
             child: SizedBox(
-              width: 280, // Fixed width for horizontal card
+              width: 280,
               child: ProjectCard(
-                project: projects[index],
+                project: project,
                 onTap: () => context.push(
                   Routes.projectDetail.replaceFirst(
                     ':projectId',
-                    projects[index].id.toString(),
+                    project.id.toString(),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Build nearby projects with distance information (location-based)
+  Widget _buildNearbyProjectsWithDistance(
+      BuildContext context, NearbyProjectsState nearbyState) {
+    debugPrint(
+        '[HOME] Nearby state: isLoading=${nearbyState.isLoading}, count=${nearbyState.projects.length}, error=${nearbyState.error}');
+    if (nearbyState.isLoading && nearbyState.projects.isEmpty) {
+      return const SizedBox(
+        height: 200,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (nearbyState.projects.isEmpty) {
+      return SizedBox(
+        height: 200,
+        child: Center(
+          child: Text(
+            context.l10n.tr('project.noProjectsFound'),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textTertiary,
+                ),
+          ),
+        ),
+      );
+    }
+
+    final projects = nearbyState.projects.take(5).toList();
+
+    return SizedBox(
+      height: 300,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: projects.length,
+        itemBuilder: (context, index) {
+          final project = projects[index];
+          debugPrint(
+              '[HOME] Rendering nearby project: ${project.name}, OwnerId: ${project.ownerId}, Distance: ${project.distance}');
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: SizedBox(
+              width: 280,
+              child: ProjectCard(
+                project: project,
+                onTap: () => context.push(
+                  Routes.projectDetail.replaceFirst(
+                    ':projectId',
+                    project.id.toString(),
                   ),
                 ),
               ),

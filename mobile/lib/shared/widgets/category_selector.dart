@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/theme.dart';
 import '../../data/models/category.dart';
 import '../../data/providers/categories_provider.dart';
+import '../../core/localization/app_localizations.dart';
 
 /// Category Selector Widget - For selecting category in forms
 class CategorySelector extends ConsumerStatefulWidget {
@@ -46,8 +47,9 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
       children: [
         // Parent category dropdown
         _buildDropdown(
-          label: 'الفئة الرئيسية${widget.required ? ' *' : ''}',
-          hint: 'اختر الفئة',
+          label:
+              '${context.l10n.tr('mainCategory')}${widget.required ? ' *' : ''}',
+          hint: context.l10n.tr('selectCategory'),
           value: widget.selectedCategory,
           items: categories,
           onChanged: (category) {
@@ -61,8 +63,9 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
             widget.selectedCategory!.hasChildren) ...[
           const SizedBox(height: 16),
           _buildDropdown(
-            label: 'الفئة الفرعية${widget.required ? ' *' : ''}',
-            hint: 'اختر الفئة الفرعية',
+            label:
+                '${context.l10n.tr('subCategory')}${widget.required ? ' *' : ''}',
+            hint: context.l10n.tr('selectSubCategory'),
             value: widget.selectedSubcategory,
             items: widget.selectedCategory!.children,
             onChanged: (subcategory) {
@@ -108,7 +111,9 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: widget.errorText != null ? AppColors.error : AppColors.divider,
+              color: widget.errorText != null
+                  ? AppColors.error
+                  : AppColors.divider,
               width: 1.5,
             ),
           ),
@@ -148,8 +153,11 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
                         DropdownMenuItem<Category?>(
                           value: null,
                           child: Text(
-                            'إلغاء الاختيار',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            context.l10n.tr('clearSelection'),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
                                   color: AppColors.textTertiary,
                                   fontStyle: FontStyle.italic,
                                 ),
@@ -184,7 +192,10 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
                               if (category.hasChildren)
                                 Text(
                                   '(${category.children.length})',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
                                         color: AppColors.textTertiary,
                                       ),
                                 ),
@@ -254,7 +265,7 @@ class CategoryFilter extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'تصفية حسب الفئة',
+              context.l10n.tr('filterByCategory'),
               style: Theme.of(context).textTheme.titleMedium,
             ),
             if (selectedCategory != null || selectedSubcategory != null)
@@ -265,7 +276,7 @@ class CategoryFilter extends ConsumerWidget {
                   onClear?.call();
                 },
                 icon: const Icon(Icons.clear_rounded, size: 18),
-                label: const Text('مسح'),
+                label: Text(context.l10n.tr('clear')),
               ),
           ],
         ),
@@ -287,7 +298,7 @@ class CategoryFilter extends ConsumerWidget {
                       final isSelected = selectedCategory == null;
                       return FilterChip(
                         selected: isSelected,
-                        label: const Text('الكل'),
+                        label: Text(context.l10n.tr('all')),
                         onSelected: (_) => onCategoryChanged(null),
                         backgroundColor: AppColors.surfaceVariant,
                         selectedColor: AppColors.primary.withOpacity(0.15),
@@ -346,7 +357,7 @@ class CategoryFilter extends ConsumerWidget {
                   final isSelected = selectedSubcategory == null;
                   return ChoiceChip(
                     selected: isSelected,
-                    label: const Text('كل الفرعية'),
+                    label: Text(context.l10n.tr('allSubCategories')),
                     onSelected: (_) => onSubcategoryChanged(null),
                     backgroundColor: AppColors.surface,
                     selectedColor: AppColors.secondary.withOpacity(0.15),
@@ -486,7 +497,7 @@ class CategoryPickerBottomSheet extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'اختر الفئة',
+                      context.l10n.tr('selectCategory'),
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     if (selectedCategory != null)
@@ -495,7 +506,7 @@ class CategoryPickerBottomSheet extends ConsumerWidget {
                           onSelected(null, null);
                           Navigator.pop(context);
                         },
-                        child: const Text('مسح'),
+                        child: Text(context.l10n.tr('clear')),
                       ),
                   ],
                 ),
@@ -556,7 +567,7 @@ class CategoryPickerBottomSheet extends ConsumerWidget {
                                     ListTile(
                                       leading: const SizedBox(width: 40),
                                       title: Text(
-                                        'كل ${category.displayName}',
+                                        '${context.l10n.tr('all')} ${category.displayName}',
                                         style: TextStyle(
                                           color: isSelected &&
                                                   selectedSubcategory == null
@@ -632,4 +643,3 @@ class CategoryPickerBottomSheet extends ConsumerWidget {
     return iconMap[iconName] ?? Icons.category_rounded;
   }
 }
-

@@ -10,13 +10,40 @@ import {
   approveCategory,
   rejectCategory,
 } from '../controllers/admin.categories.controller';
+import { getDashboardStats } from '../controllers/admin.controller';
 import { validate, categoryValidations } from '../middleware/validate';
 import { authenticate, adminOnly } from '../middleware/auth';
+import { getUsers, toggleUserBan } from '../controllers/admin.users.controller';
 
 const router = Router();
 
 // All admin routes require authentication and admin role
 router.use(authenticate, adminOnly);
+
+// ==================== Dashboard ====================
+
+/**
+ * @route   GET /admin/stats/dashboard
+ * @desc    Get dashboard statistics
+ * @access  Admin
+ */
+router.get('/stats/dashboard', getDashboardStats);
+
+// ==================== User Management ====================
+
+/**
+ * @route   GET /admin/users
+ * @desc    Get all users with pagination and filters
+ * @access  Admin
+ */
+router.get('/users', getUsers);
+
+/**
+ * @route   PUT /admin/users/:id/ban
+ * @desc    Toggle user ban status
+ * @access  Admin
+ */
+router.put('/users/:id/ban', toggleUserBan);
 
 // ==================== Category Management ====================
 

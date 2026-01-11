@@ -15,6 +15,7 @@ class ApiEndpoints {
 
   // Dashboard endpoints
   static const String dashboard = '/admin/dashboard';
+  static const String dashboardStats = '/admin/stats/dashboard';
 
   // Users management
   static const String users = '/admin/users';

@@ -72,3 +72,37 @@ export const processImage = async (req: Request, res: Response, next: NextFuncti
         next(error);
     }
 };
+
+// Project image processing middleware
+export const processProjectImage = async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.file) return next();
+
+    try {
+        const uploadDir = path.join(process.cwd(), 'uploads/projects');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const filename = `cover-${uniqueSuffix}.jpg`;
+        const filepath = path.join(uploadDir, filename);
+
+        // Process cover image
+        await sharp(req.file.buffer)
+            .resize(1200, 600, { // Landscape for cover
+                fit: 'cover',
+            })
+            .toFormat('jpeg', { quality: 80 })
+            .toFile(filepath);
+
+        // Update req.file
+        req.file.filename = filename;
+        req.file.path = filepath;
+        req.file.destination = uploadDir;
+        req.file.mimetype = 'image/jpeg';
+
+        next();
+    } catch (error) {
+        next(error);
+    }
+};

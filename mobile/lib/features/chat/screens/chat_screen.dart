@@ -46,6 +46,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(chatProvider(widget.conversationId));
+
+    // Auto-scroll to bottom when messages are loaded
+    ref.listen(chatProvider(widget.conversationId), (previous, next) {
+      if (previous?.isLoading == true &&
+          !next.isLoading &&
+          next.messages.isNotEmpty) {
+        // Use a slight delay to ensure list is built
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) _scrollToBottom();
+        });
+      }
+      // Also scroll when new message added
+      if (previous != null && next.messages.length > previous.messages.length) {
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) _scrollToBottom();
+        });
+      }
+    });
+
     final currentUser = ref.watch(currentUserProvider);
     final isRtl = context.isRtl;
     final l10n = context.l10n;
@@ -214,6 +233,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       itemBuilder: (context, index) {
         final message = state.messages[index];
         final isMe = message.senderId == currentUserId;
+        print(
+            'DEBUG: MsgID=${message.id}, SenderID=${message.senderId}, CurrentUserID=$currentUserId, isMe=$isMe');
 
         // Show date separator if needed
         final showDate = index == 0 ||

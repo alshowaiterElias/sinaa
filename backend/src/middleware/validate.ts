@@ -146,6 +146,10 @@ export const authValidations = {
       .matches(/^(\+966|05)\d{8,9}$/)
       .withMessage('Please provide a valid Saudi phone number'),
     commonValidations.language,
+    body('notificationsEnabled')
+      .optional()
+      .isBoolean()
+      .withMessage('notificationsEnabled must be a boolean'),
   ],
 
   changePassword: [

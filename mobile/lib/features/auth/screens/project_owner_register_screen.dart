@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../config/theme.dart';
 import '../../../config/routes.dart';
@@ -40,6 +42,37 @@ class _ProjectOwnerRegisterScreenState
   double? _longitude;
   Map<String, String>? _workingHours;
   Map<String, String>? _socialLinks;
+  File? _coverImage;
+
+  Future<void> _pickImage() async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+      if (pickedFile != null) {
+        setState(() {
+          _coverImage = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error picking image: $e');
+      if (mounted) {
+        final l10n = context.l10n;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${l10n.tr('error')}: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  // User location fields
+  String? _userCity;
+  double? _userLatitude;
+  double? _userLongitude;
+  bool _locationSharingEnabled = true;
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -101,6 +134,11 @@ class _ProjectOwnerRegisterScreenState
             phone: _phoneController.text.trim().isNotEmpty
                 ? _phoneController.text.trim()
                 : null,
+            userCity: _userCity,
+            userLatitude: _userLatitude,
+            userLongitude: _userLongitude,
+            coverImage: _coverImage,
+            locationSharingEnabled: _locationSharingEnabled,
           );
 
       if (mounted) {
@@ -246,6 +284,49 @@ class _ProjectOwnerRegisterScreenState
                           const SizedBox(height: 32),
 
                           if (_currentStep == 0) ...[
+                            // Cover Image
+                            GestureDetector(
+                              onTap: _pickImage,
+                              child: Container(
+                                height: 150,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.divider),
+                                  image: _coverImage != null
+                                      ? DecorationImage(
+                                          image: FileImage(_coverImage!),
+                                          fit: BoxFit.cover,
+                                        )
+                                      : null,
+                                ),
+                                child: _coverImage == null
+                                    ? Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.add_photo_alternate_outlined,
+                                            size: 40,
+                                            color: AppColors.textTertiary,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            l10n.tr('project.addCoverImage'),
+                                            style: TextStyle(
+                                              color: AppColors.textTertiary,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : null,
+                              ),
+                            ),
+
+                            const SizedBox(height: 20),
+
                             // Project info
                             CustomTextField(
                               controller: _projectNameController,
@@ -291,7 +372,6 @@ class _ProjectOwnerRegisterScreenState
 
                             const SizedBox(height: 20),
 
-                            // Location Picker
                             _RegisterTile(
                               icon: Icons.location_on_outlined,
                               title: l10n.tr('project.location'),
@@ -433,6 +513,26 @@ class _ProjectOwnerRegisterScreenState
                               prefixIcon: Icons.phone_outlined,
                               validator: (value) =>
                                   Validators.saudiPhone(value, required: true),
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // User Location Picker
+                            _LocationPickerTile(
+                              selectedCity: _userCity,
+                              locationSharingEnabled: _locationSharingEnabled,
+                              onLocationSelected: (city, lat, lon) {
+                                setState(() {
+                                  _userCity = city;
+                                  _userLatitude = lat;
+                                  _userLongitude = lon;
+                                });
+                              },
+                              onSharingToggled: (enabled) {
+                                setState(() {
+                                  _locationSharingEnabled = enabled;
+                                });
+                              },
                             ),
 
                             const SizedBox(height: 20),
@@ -606,6 +706,169 @@ class _RegisterTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Location picker tile widget for registration
+class _LocationPickerTile extends StatelessWidget {
+  final String? selectedCity;
+  final bool locationSharingEnabled;
+  final void Function(String? city, double? lat, double? lon)
+      onLocationSelected;
+  final void Function(bool enabled) onSharingToggled;
+
+  const _LocationPickerTile({
+    this.selectedCity,
+    required this.locationSharingEnabled,
+    required this.onLocationSelected,
+    required this.onSharingToggled,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Location picker button
+        InkWell(
+          onTap: () async {
+            final result = await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const LocationPickerScreen(),
+              ),
+            );
+
+            if (result != null) {
+              onLocationSelected(
+                result['city'] as String?,
+                result['latitude'] as double?,
+                result['longitude'] as double?,
+              );
+            }
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.divider),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.location_on_outlined,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.tr('auth.yourLocation'),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        selectedCity ?? l10n.tr('auth.pickYourLocation'),
+                        style: TextStyle(
+                          color: selectedCity != null
+                              ? AppColors.textSecondary
+                              : AppColors.textTertiary,
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 14,
+                  color: Colors.grey,
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Location sharing toggle
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.divider),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.share_location_outlined,
+                color: AppColors.textSecondary,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.tr('auth.locationSharing'),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      l10n.tr('auth.locationSharingHint'),
+                      style: TextStyle(
+                        color: AppColors.textTertiary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: locationSharingEnabled,
+                onChanged: onSharingToggled,
+                activeColor: AppColors.primary,
+              ),
+            ],
+          ),
+        ),
+
+        // Info message about location
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            l10n.tr('auth.locationInfoMessage'),
+            style: TextStyle(
+              color: AppColors.textTertiary,
+              fontSize: 11,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

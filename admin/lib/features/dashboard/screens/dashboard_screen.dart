@@ -1,595 +1,443 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 
-import '../../../config/theme.dart';
+import '../data/providers/dashboard_provider.dart';
+import '../data/models/dashboard_stats.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Text(
-            'لوحة التحكم',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'مرحباً بك في لوحة إدارة صنعة',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: AdminColors.textSecondary),
-          ),
-          const SizedBox(height: 24),
+    final statsAsync = ref.watch(dashboardStatsProvider);
 
-          // Stats cards
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth > 900;
-              final crossAxisCount = isWide ? 4 : 2;
-
-              return GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: crossAxisCount,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: isWide ? 1.5 : 1.3,
-                children: const [
-                  _StatCard(
-                    title: 'المستخدمين',
-                    value: '1,234',
-                    change: '+12%',
-                    isPositive: true,
-                    icon: Icons.people,
-                    color: AdminColors.info,
-                  ),
-                  _StatCard(
-                    title: 'المشاريع',
-                    value: '156',
-                    change: '+8%',
-                    isPositive: true,
-                    icon: Icons.store,
-                    color: AdminColors.success,
-                  ),
-                  _StatCard(
-                    title: 'المنتجات',
-                    value: '2,847',
-                    change: '+23%',
-                    isPositive: true,
-                    icon: Icons.inventory_2,
-                    color: AdminColors.accent,
-                  ),
-                  _StatCard(
-                    title: 'تذاكر مفتوحة',
-                    value: '12',
-                    change: '-5%',
-                    isPositive: true,
-                    icon: Icons.support_agent,
-                    color: AdminColors.warning,
-                  ),
-                ],
-              );
-            },
-          ),
-          const SizedBox(height: 24),
-
-          // Charts row
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth > 900;
-
-              if (isWide) {
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(flex: 2, child: _buildUserGrowthChart(context)),
-                    const SizedBox(width: 16),
-                    Expanded(child: _buildCategoryDistribution(context)),
-                  ],
-                );
-              }
-
-              return Column(
-                children: [
-                  _buildUserGrowthChart(context),
-                  const SizedBox(height: 16),
-                  _buildCategoryDistribution(context),
-                ],
-              );
-            },
-          ),
-          const SizedBox(height: 24),
-
-          // Pending approvals and recent activity
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth > 900;
-
-              if (isWide) {
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: _buildPendingApprovals(context)),
-                    const SizedBox(width: 16),
-                    Expanded(child: _buildRecentActivity(context)),
-                  ],
-                );
-              }
-
-              return Column(
-                children: [
-                  _buildPendingApprovals(context),
-                  const SizedBox(height: 16),
-                  _buildRecentActivity(context),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUserGrowthChart(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'نمو المستخدمين',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              height: 250,
-              child: LineChart(
-                LineChartData(
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: 20,
-                    getDrawingHorizontalLine: (value) {
-                      return FlLine(color: AdminColors.divider, strokeWidth: 1);
-                    },
-                  ),
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 40,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            value.toInt().toString(),
-                            style: const TextStyle(
-                              color: AdminColors.textTertiary,
-                              fontSize: 12,
-                            ),
-                          );
-                        },
+    return Scaffold(
+      body: RefreshIndicator(
+        onRefresh: () => ref.read(dashboardStatsProvider.notifier).refresh(),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 32),
+              statsAsync.when(
+                data: (stats) {
+                  if (stats == null)
+                    return const Center(child: Text('No data'));
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildStatsGrid(stats),
+                      const SizedBox(height: 32),
+                      _buildChartsSection(stats),
+                      const SizedBox(height: 32),
+                      _buildRecentActivity(stats),
+                    ],
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, stack) => Center(
+                  child: Column(
+                    children: [
+                      Text('Error: $error'),
+                      ElevatedButton(
+                        onPressed: () =>
+                            ref.read(dashboardStatsProvider.notifier).refresh(),
+                        child: const Text('Retry'),
                       ),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          const months = [
-                            'يناير',
-                            'فبراير',
-                            'مارس',
-                            'أبريل',
-                            'مايو',
-                            'يونيو',
-                          ];
-                          if (value.toInt() < months.length) {
-                            return Text(
-                              months[value.toInt()],
-                              style: const TextStyle(
-                                color: AdminColors.textTertiary,
-                                fontSize: 10,
-                              ),
-                            );
-                          }
-                          return const SizedBox();
-                        },
-                      ),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
+                    ],
                   ),
-                  borderData: FlBorderData(show: false),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: const [
-                        FlSpot(0, 30),
-                        FlSpot(1, 45),
-                        FlSpot(2, 55),
-                        FlSpot(3, 70),
-                        FlSpot(4, 85),
-                        FlSpot(5, 100),
-                      ],
-                      isCurved: true,
-                      color: AdminColors.primary,
-                      barWidth: 3,
-                      dotData: const FlDotData(show: false),
-                      belowBarData: BarAreaData(
-                        show: true,
-                        color: AdminColors.primary.withOpacity(0.1),
-                      ),
-                    ),
-                  ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildCategoryDistribution(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'توزيع التصنيفات',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              height: 250,
-              child: PieChart(
-                PieChartData(
-                  sectionsSpace: 2,
-                  centerSpaceRadius: 40,
-                  sections: [
-                    PieChartSectionData(
-                      value: 35,
-                      title: '35%',
-                      color: AdminColors.primary,
-                      radius: 60,
-                      titleStyle: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    PieChartSectionData(
-                      value: 25,
-                      title: '25%',
-                      color: AdminColors.accent,
-                      radius: 60,
-                      titleStyle: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    PieChartSectionData(
-                      value: 20,
-                      title: '20%',
-                      color: AdminColors.success,
-                      radius: 60,
-                      titleStyle: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    PieChartSectionData(
-                      value: 20,
-                      title: '20%',
-                      color: AdminColors.info,
-                      radius: 60,
-                      titleStyle: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Legend
-            Wrap(
-              spacing: 16,
-              runSpacing: 8,
-              children: [
-                _buildLegendItem('طعام', AdminColors.primary),
-                _buildLegendItem('حرف يدوية', AdminColors.accent),
-                _buildLegendItem('ملابس', AdminColors.success),
-                _buildLegendItem('أخرى', AdminColors.info),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildHeader() {
+    final now = DateTime.now();
+    final formatter = DateFormat('EEEE, d MMMM yyyy');
 
-  Widget _buildLegendItem(String label, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
-          ),
+        Text(
+          'Dashboard',
+          style: Theme.of(
+            context,
+          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 12)),
+        const SizedBox(height: 8),
+        Text(
+          formatter.format(now),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
+        ),
       ],
     );
   }
 
-  Widget _buildPendingApprovals(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'في انتظار الموافقة',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                TextButton(onPressed: () {}, child: const Text('عرض الكل')),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _buildPendingItem(
-              context,
-              type: 'مشروع',
-              name: 'مطبخ أم محمد',
-              time: 'منذ ساعتين',
-              color: AdminColors.success,
-            ),
-            _buildPendingItem(
-              context,
-              type: 'منتج',
-              name: 'كيكة الشوكولاتة',
-              time: 'منذ 3 ساعات',
-              color: AdminColors.accent,
-            ),
-            _buildPendingItem(
-              context,
-              type: 'تقييم',
-              name: 'تقييم على منتج #234',
-              time: 'منذ 5 ساعات',
-              color: AdminColors.warning,
-            ),
-          ],
+  Widget _buildStatsGrid(DashboardStats stats) {
+    return GridView.count(
+      crossAxisCount: 4,
+      crossAxisSpacing: 24,
+      mainAxisSpacing: 24,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      childAspectRatio: 1.5,
+      children: [
+        _buildStatCard(
+          'Total Users',
+          stats.counts.users.toString(),
+          Icons.people_outline,
+          Colors.blue,
         ),
-      ),
+        _buildStatCard(
+          'Active Projects',
+          stats.counts.projects.toString(),
+          Icons.business_center_outlined,
+          Colors.orange,
+        ),
+        _buildStatCard(
+          'Total Products',
+          stats.counts.products.toString(),
+          Icons.inventory_2_outlined,
+          Colors.green,
+        ),
+        _buildStatCard(
+          'Pending Tickets',
+          stats.counts.pendingTickets.toString(),
+          Icons.support_agent,
+          Colors.red,
+        ),
+      ],
     );
   }
 
-  Widget _buildPendingItem(
-    BuildContext context, {
-    required String type,
-    required String name,
-    required String time,
-    required Color color,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            width: 8,
-            height: 40,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name, style: Theme.of(context).textTheme.titleSmall),
-                Text(
-                  '$type • $time',
-                  style: Theme.of(context).textTheme.bodySmall,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
                 ),
-              ],
-            ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+            ],
           ),
-          TextButton(onPressed: () {}, child: const Text('مراجعة')),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildRecentActivity(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'النشاط الأخير',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            _buildActivityItem(
-              context,
-              icon: Icons.person_add,
-              iconColor: AdminColors.info,
-              title: 'مستخدم جديد',
-              subtitle: 'أحمد محمد سجل حساب جديد',
-              time: 'منذ 5 دقائق',
-            ),
-            _buildActivityItem(
-              context,
-              icon: Icons.check_circle,
-              iconColor: AdminColors.success,
-              title: 'موافقة على مشروع',
-              subtitle: 'تمت الموافقة على مشروع "حلويات نورة"',
-              time: 'منذ 20 دقيقة',
-            ),
-            _buildActivityItem(
-              context,
-              icon: Icons.shopping_bag,
-              iconColor: AdminColors.accent,
-              title: 'منتج جديد',
-              subtitle: 'تم إضافة منتج جديد في قسم الطعام',
-              time: 'منذ ساعة',
-            ),
-            _buildActivityItem(
-              context,
-              icon: Icons.star,
-              iconColor: AdminColors.warning,
-              title: 'تقييم جديد',
-              subtitle: 'أحمد قيّم منتج بـ 5 نجوم',
-              time: 'منذ ساعتين',
-            ),
-          ],
-        ),
-      ),
+  Widget _buildChartsSection(DashboardStats stats) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(flex: 2, child: _buildProductGrowthChart(stats)),
+        const SizedBox(width: 24),
+        Expanded(flex: 1, child: _buildCategoryChart(stats)),
+      ],
     );
   }
 
-  Widget _buildActivityItem(
-    BuildContext context, {
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-    required String time,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
+  Widget _buildProductGrowthChart(DashboardStats stats) {
+    return Container(
+      height: 400,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: Theme.of(context).textTheme.titleSmall),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodySmall,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          Text(time, style: Theme.of(context).textTheme.labelSmall),
         ],
       ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final String change;
-  final bool isPositive;
-  final IconData icon;
-  final Color color;
-
-  const _StatCard({
-    required this.title,
-    required this.value,
-    required this.change,
-    required this.isPositive,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Product Growth (Last 30 Days)',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 24),
+          Expanded(
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(show: false),
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: true, reservedSize: 40),
                   ),
-                  child: Icon(icon, color: color),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isPositive
-                        ? AdminColors.success.withOpacity(0.1)
-                        : AdminColors.error.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    change,
-                    style: TextStyle(
-                      color: isPositive
-                          ? AdminColors.success
-                          : AdminColors.error,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      interval: 5,
+                      getTitlesWidget: (value, meta) {
+                        if (value.toInt() >= 0 &&
+                            value.toInt() < stats.graphs.productGrowth.length) {
+                          final dateStr =
+                              stats.graphs.productGrowth[value.toInt()].month;
+                          try {
+                            final date = DateTime.parse(dateStr);
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(
+                                DateFormat('MM-dd').format(date),
+                                style: const TextStyle(fontSize: 10),
+                              ),
+                            );
+                          } catch (e) {
+                            return const Text('');
+                          }
+                        }
+                        return const Text('');
+                      },
                     ),
                   ),
+                  rightTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
                 ),
-              ],
-            ),
-            const Spacer(),
-            Text(
-              value,
-              style: Theme.of(
-                context,
-              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AdminColors.textSecondary,
+                borderData: FlBorderData(show: false),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: stats.graphs.productGrowth
+                        .asMap()
+                        .entries
+                        .map(
+                          (e) => FlSpot(
+                            e.key.toDouble(),
+                            e.value.count.toDouble(),
+                          ),
+                        )
+                        .toList(),
+                    isCurved: true,
+                    color: Colors.green,
+                    barWidth: 3,
+                    dotData: FlDotData(show: false),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: Colors.green.withOpacity(0.1),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryChart(DashboardStats stats) {
+    return Container(
+      height: 400,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Products by Category',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 24),
+          Expanded(
+            child: PieChart(
+              PieChartData(
+                sectionsSpace: 0,
+                centerSpaceRadius: 40,
+                sections: stats.graphs.categoryDistribution.asMap().entries.map(
+                  (e) {
+                    final index = e.key;
+                    final data = e.value;
+                    final colors = [
+                      Colors.blue,
+                      Colors.orange,
+                      Colors.purple,
+                      Colors.red,
+                      Colors.teal,
+                    ];
+                    return PieChartSectionData(
+                      color: colors[index % colors.length],
+                      value: data.count.toDouble(),
+                      title: '${data.count}',
+                      radius: 50,
+                      titleStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    );
+                  },
+                ).toList(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Column(
+            children: stats.graphs.categoryDistribution.asMap().entries.map((
+              e,
+            ) {
+              final index = e.key;
+              final data = e.value;
+              final colors = [
+                Colors.blue,
+                Colors.orange,
+                Colors.purple,
+                Colors.red,
+                Colors.teal,
+              ];
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: colors[index % colors.length],
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        data.name,
+                        style: const TextStyle(fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      '${data.count}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentActivity(DashboardStats stats) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Recent Registrations',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: stats.recentActivity.length,
+            separatorBuilder: (context, index) => const Divider(),
+            itemBuilder: (context, index) {
+              final user = stats.recentActivity[index];
+              return ListTile(
+                leading: CircleAvatar(
+                  backgroundImage: user.avatarUrl != null
+                      ? NetworkImage(user.avatarUrl!)
+                      : null,
+                  child: user.avatarUrl == null
+                      ? Text(user.fullName[0].toUpperCase())
+                      : null,
+                ),
+                title: Text(user.fullName),
+                subtitle: Text(user.email),
+                trailing: Text(
+                  DateFormat('MMM d, h:mm a').format(user.createdAt),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

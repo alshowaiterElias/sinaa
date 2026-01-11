@@ -5,6 +5,7 @@ import {
     markAsRead,
     markAllAsRead,
     deleteNotification,
+    deleteAll,
 } from '../controllers/notifications.controller';
 import { authenticate } from '../middleware/auth';
 
@@ -27,5 +28,8 @@ router.put('/:id/read', markAsRead);
 
 // DELETE /notifications/:id - Delete notification
 router.delete('/:id', deleteNotification);
+
+// DELETE /notifications - Delete all notifications
+router.delete('/', deleteAll);
 
 export default router;

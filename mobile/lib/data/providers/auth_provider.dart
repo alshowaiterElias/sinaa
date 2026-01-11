@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/storage/local_storage.dart';
@@ -93,6 +94,10 @@ class AuthNotifier extends Notifier<AuthState> {
     required String fullName,
     String? phone,
     String language = 'ar',
+    String? city,
+    double? latitude,
+    double? longitude,
+    bool locationSharingEnabled = true,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
 
@@ -103,6 +108,10 @@ class AuthNotifier extends Notifier<AuthState> {
         fullName: fullName,
         phone: phone,
         language: language,
+        city: city,
+        latitude: latitude,
+        longitude: longitude,
+        locationSharingEnabled: locationSharingEnabled,
       );
 
       state = state.copyWith(
@@ -135,6 +144,12 @@ class AuthNotifier extends Notifier<AuthState> {
     double? longitude,
     Map<String, dynamic>? workingHours,
     Map<String, dynamic>? socialLinks,
+    // User location fields
+    String? userCity,
+    double? userLatitude,
+    double? userLongitude,
+    File? coverImage,
+    bool locationSharingEnabled = true,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
 
@@ -154,6 +169,11 @@ class AuthNotifier extends Notifier<AuthState> {
         longitude: longitude,
         workingHours: workingHours,
         socialLinks: socialLinks,
+        userCity: userCity,
+        userLatitude: userLatitude,
+        userLongitude: userLongitude,
+        coverImage: coverImage,
+        locationSharingEnabled: locationSharingEnabled,
       );
 
       state = state.copyWith(
@@ -215,6 +235,11 @@ class AuthNotifier extends Notifier<AuthState> {
     String? fullName,
     String? phone,
     String? language,
+    String? city,
+    double? latitude,
+    double? longitude,
+    bool? locationSharingEnabled,
+    bool? notificationsEnabled,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
 
@@ -223,6 +248,11 @@ class AuthNotifier extends Notifier<AuthState> {
         fullName: fullName,
         phone: phone,
         language: language,
+        city: city,
+        latitude: latitude,
+        longitude: longitude,
+        locationSharingEnabled: locationSharingEnabled,
+        notificationsEnabled: notificationsEnabled,
       );
 
       await _storage.saveUserData(user.toJson());

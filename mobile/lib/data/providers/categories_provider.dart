@@ -19,7 +19,7 @@ class CategoriesState {
 
   /// Get parent categories only
   List<Category> get parentCategories =>
-      categories.where((c) => c.isParentCategory).toList();
+      categories.where((c) => c.parentId == null).toList();
 
   /// Get all categories flattened
   List<Category> get flatCategories {

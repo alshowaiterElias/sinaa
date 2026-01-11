@@ -404,6 +404,26 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   ),
 
                   const SizedBox(height: 32),
+
+                  // Reviews Section
+                  ProductReviewsSection(
+                    productId: product.id,
+                    isRtl: isRtl,
+                    isOwner: true,
+                    onReportComment: (review) {
+                      context.push(
+                        Routes.createTicket,
+                        extra: {
+                          'initialSubject':
+                              'Report Comment on Product: ${product.name}',
+                          'initialDescription':
+                              'Reporting comment by user ${review.userId} on review ${review.id}.\n\nComment content:\n${review.comment}',
+                        },
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 32),
                 ],
               ),
             ),

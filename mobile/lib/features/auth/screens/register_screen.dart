@@ -9,6 +9,7 @@ import '../../../core/utils/validators.dart';
 import '../../../data/providers/auth_provider.dart';
 import '../../../shared/widgets/custom_text_field.dart';
 import '../../../shared/widgets/loading_button.dart';
+import '../../projects/screens/location_picker_screen.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -27,6 +28,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+
+  // Location fields
+  String? _selectedCity;
+  double? _latitude;
+  double? _longitude;
+  bool _locationSharingEnabled = true;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -82,6 +89,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
             phone: _phoneController.text.trim().isNotEmpty
                 ? _phoneController.text.trim()
                 : null,
+            city: _selectedCity,
+            latitude: _latitude,
+            longitude: _longitude,
+            locationSharingEnabled: _locationSharingEnabled,
           );
 
       if (mounted) {
@@ -235,6 +246,27 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
 
                                 const SizedBox(height: 20),
 
+                                // Location Picker Tile
+                                _LocationPickerTile(
+                                  selectedCity: _selectedCity,
+                                  locationSharingEnabled:
+                                      _locationSharingEnabled,
+                                  onLocationSelected: (city, lat, lon) {
+                                    setState(() {
+                                      _selectedCity = city;
+                                      _latitude = lat;
+                                      _longitude = lon;
+                                    });
+                                  },
+                                  onSharingToggled: (enabled) {
+                                    setState(() {
+                                      _locationSharingEnabled = enabled;
+                                    });
+                                  },
+                                ),
+
+                                const SizedBox(height: 20),
+
                                 CustomTextField(
                                   controller: _passwordController,
                                   label: l10n.tr('auth.password'),
@@ -379,6 +411,169 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Location picker tile widget for registration
+class _LocationPickerTile extends StatelessWidget {
+  final String? selectedCity;
+  final bool locationSharingEnabled;
+  final void Function(String? city, double? lat, double? lon)
+      onLocationSelected;
+  final void Function(bool enabled) onSharingToggled;
+
+  const _LocationPickerTile({
+    this.selectedCity,
+    required this.locationSharingEnabled,
+    required this.onLocationSelected,
+    required this.onSharingToggled,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Location picker button
+        InkWell(
+          onTap: () async {
+            final result = await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const LocationPickerScreen(),
+              ),
+            );
+
+            if (result != null) {
+              onLocationSelected(
+                result['city'] as String?,
+                result['latitude'] as double?,
+                result['longitude'] as double?,
+              );
+            }
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.divider),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.location_on_outlined,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.tr('auth.yourLocation'),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        selectedCity ?? l10n.tr('auth.pickYourLocation'),
+                        style: TextStyle(
+                          color: selectedCity != null
+                              ? AppColors.textSecondary
+                              : AppColors.textTertiary,
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 14,
+                  color: Colors.grey,
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Location sharing toggle
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.divider),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.share_location_outlined,
+                color: AppColors.textSecondary,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.tr('auth.locationSharing'),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      l10n.tr('auth.locationSharingHint'),
+                      style: TextStyle(
+                        color: AppColors.textTertiary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: locationSharingEnabled,
+                onChanged: onSharingToggled,
+                activeColor: AppColors.primary,
+              ),
+            ],
+          ),
+        ),
+
+        // Info message about location
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            l10n.tr('auth.locationInfoMessage'),
+            style: TextStyle(
+              color: AppColors.textTertiary,
+              fontSize: 11,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

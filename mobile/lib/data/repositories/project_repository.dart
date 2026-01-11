@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -19,6 +20,11 @@ class ProjectsRepository {
     int limit = 20,
     String? city,
     String? search,
+    double? lat,
+    double? lon,
+    double? radius,
+    String? sortBy, // 'distance', 'rating', 'newest'
+    double? minRating,
   }) async {
     try {
       final Map<String, dynamic> queryParams = {
@@ -28,6 +34,11 @@ class ProjectsRepository {
 
       if (city != null) queryParams['city'] = city;
       if (search != null) queryParams['search'] = search;
+      if (lat != null) queryParams['lat'] = lat;
+      if (lon != null) queryParams['lon'] = lon;
+      if (radius != null) queryParams['radius'] = radius;
+      if (sortBy != null) queryParams['sortBy'] = sortBy;
+      if (minRating != null) queryParams['minRating'] = minRating;
 
       final response = await _dio.get(
         ApiEndpoints.projects,
@@ -137,11 +148,21 @@ class ProjectsRepository {
   }
 
   /// Update project details
-  Future<Project> updateProject(int id, Map<String, dynamic> updates) async {
+  Future<Project> updateProject(int id, Map<String, dynamic> updates,
+      {File? coverImage}) async {
     try {
+      final formData = FormData.fromMap(updates);
+
+      if (coverImage != null) {
+        formData.files.add(MapEntry(
+          'coverImage',
+          await MultipartFile.fromFile(coverImage.path),
+        ));
+      }
+
       final response = await _dio.put(
         ApiEndpoints.projectDetail(id),
-        data: updates,
+        data: formData,
       );
 
       final data = response.data['data'];

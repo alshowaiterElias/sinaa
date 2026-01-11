@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config/theme.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/validators.dart';
 import '../../../data/providers/auth_provider.dart';
 import '../../../shared/widgets/custom_text_field.dart';
 import '../../../shared/widgets/loading_button.dart';
+import '../../projects/screens/location_picker_screen.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -22,6 +24,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   String _selectedLanguage = 'ar';
   bool _isLoading = false;
 
+  // Location state
+  String? _selectedCity;
+  double? _latitude;
+  double? _longitude;
+  bool _locationSharingEnabled = true;
+
   @override
   void initState() {
     super.initState();
@@ -29,6 +37,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _fullNameController = TextEditingController(text: user?.fullName ?? '');
     _phoneController = TextEditingController(text: user?.phone ?? '');
     _selectedLanguage = user?.language ?? 'ar';
+
+    // Initialize location state from user
+    _selectedCity = user?.city;
+    _latitude = user?.latitude;
+    _longitude = user?.longitude;
+    _locationSharingEnabled = user?.locationSharingEnabled ?? true;
   }
 
   @override
@@ -50,12 +64,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ? _phoneController.text.trim()
                 : null,
             language: _selectedLanguage,
+            city: _selectedCity,
+            latitude: _latitude,
+            longitude: _longitude,
+            locationSharingEnabled: _locationSharingEnabled,
           );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('تم تحديث الملف الشخصي بنجاح'),
+            content: Text(context.l10n.tr('profileUpdatedSuccess')),
             backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -85,14 +103,36 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
   }
 
+  Future<void> _pickLocation() async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LocationPickerScreen(
+          initialLatitude: _latitude,
+          initialLongitude: _longitude,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _selectedCity = result['city'] as String?;
+        _latitude = result['latitude'] as double?;
+        _longitude = result['longitude'] as double?;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authStateProvider).user;
+    final l10n = context.l10n;
+    final isRtl = context.isRtl;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('تعديل الملف الشخصي'),
+        title: Text(l10n.tr('editProfile')),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -125,7 +165,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       child: Center(
                         child: Text(
                           user?.fullName.substring(0, 1).toUpperCase() ?? 'U',
-                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                          style: Theme.of(context)
+                              .textTheme
+                              .displaySmall
+                              ?.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -157,8 +200,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           onPressed: () {
                             // TODO: Implement image picker
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('قريباً - تغيير الصورة'),
+                              SnackBar(
+                                content: Text(l10n.tr('changePhotoSoon')),
                               ),
                             );
                           },
@@ -173,7 +216,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
               // Email (read-only)
               Text(
-                'البريد الإلكتروني',
+                l10n.tr('email'),
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -210,9 +253,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
               const SizedBox(height: 4),
               Padding(
-                padding: const EdgeInsets.only(right: 4),
+                padding:
+                    EdgeInsets.only(right: isRtl ? 4 : 0, left: isRtl ? 0 : 4),
                 child: Text(
-                  'لا يمكن تغيير البريد الإلكتروني',
+                  l10n.tr('emailCannotBeChanged'),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.textTertiary,
                       ),
@@ -224,8 +268,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               // Full name
               CustomTextField(
                 controller: _fullNameController,
-                label: 'الاسم الكامل',
-                hint: 'أدخل اسمك الكامل',
+                label: l10n.tr('fullName'),
+                hint: l10n.tr('enterFullName'),
                 prefixIcon: Icons.person_outline_rounded,
                 textCapitalization: TextCapitalization.words,
                 validator: (value) => Validators.fullName(value),
@@ -236,18 +280,88 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               // Phone
               CustomTextField(
                 controller: _phoneController,
-                label: 'رقم الجوال',
-                hint: '05xxxxxxxx',
+                label: l10n.tr('phone'),
+                hint: l10n.tr('phoneHint'),
                 keyboardType: TextInputType.phone,
                 prefixIcon: Icons.phone_outlined,
-                validator: (value) => Validators.saudiPhone(value, required: false),
+                validator: (value) =>
+                    Validators.saudiPhone(value, required: false),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Location section
+              Text(
+                l10n.tr('auth.yourLocation'),
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              _buildLocationTile(context),
+
+              const SizedBox(height: 16),
+
+              // Location sharing toggle
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.divider),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.share_location_rounded,
+                      color: _locationSharingEnabled
+                          ? AppColors.primary
+                          : AppColors.textTertiary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.tr('auth.locationSharing'),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                          Text(
+                            l10n.tr('auth.locationSharingHint'),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.textTertiary,
+                                    ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: _locationSharingEnabled,
+                      onChanged: (value) {
+                        setState(() {
+                          _locationSharingEnabled = value;
+                        });
+                      },
+                      activeColor: AppColors.primary,
+                    ),
+                  ],
+                ),
               ),
 
               const SizedBox(height: 24),
 
               // Language selection
               Text(
-                'اللغة المفضلة',
+                l10n.tr('language'),
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -282,7 +396,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               LoadingButton(
                 onPressed: _handleUpdate,
                 isLoading: _isLoading,
-                text: 'حفظ التغييرات',
+                text: l10n.tr('auth.save'),
               ),
 
               const SizedBox(height: 16),
@@ -292,11 +406,82 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 child: TextButton.icon(
                   onPressed: () => context.push('/change-password'),
                   icon: const Icon(Icons.lock_outline_rounded, size: 20),
-                  label: const Text('تغيير كلمة المرور'),
+                  label: Text(l10n.tr('auth.changePassword')),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationTile(BuildContext context) {
+    final l10n = context.l10n;
+    final hasLocation =
+        _selectedCity != null || (_latitude != null && _longitude != null);
+
+    return GestureDetector(
+      onTap: _pickLocation,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: hasLocation
+                ? AppColors.primary.withOpacity(0.3)
+                : AppColors.divider,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: hasLocation
+                    ? AppColors.primary.withOpacity(0.1)
+                    : AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                hasLocation
+                    ? Icons.location_on_rounded
+                    : Icons.location_off_rounded,
+                color: hasLocation ? AppColors.primary : AppColors.textTertiary,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    hasLocation
+                        ? (_selectedCity ?? l10n.tr('auth.yourLocation'))
+                        : l10n.tr('auth.pickYourLocation'),
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: hasLocation
+                              ? AppColors.textPrimary
+                              : AppColors.textSecondary,
+                        ),
+                  ),
+                  if (hasLocation && _latitude != null && _longitude != null)
+                    Text(
+                      '${_latitude!.toStringAsFixed(4)}, ${_longitude!.toStringAsFixed(4)}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textTertiary,
+                          ),
+                    ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textTertiary,
+            ),
+          ],
         ),
       ),
     );
@@ -334,7 +519,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               label,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                    color:
+                        isSelected ? AppColors.primary : AppColors.textPrimary,
                   ),
             ),
             if (isSelected) ...[
@@ -351,4 +537,3 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
   }
 }
-

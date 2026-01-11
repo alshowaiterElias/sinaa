@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -20,6 +21,10 @@ class AuthRepository {
     required String fullName,
     String? phone,
     String language = 'ar',
+    String? city,
+    double? latitude,
+    double? longitude,
+    bool locationSharingEnabled = true,
   }) async {
     try {
       final response = await _dio.post(ApiEndpoints.register, data: {
@@ -28,6 +33,10 @@ class AuthRepository {
         'fullName': fullName,
         if (phone != null) 'phone': phone,
         'language': language,
+        if (city != null) 'city': city,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
+        'locationSharingEnabled': locationSharingEnabled,
       });
 
       return _handleAuthResponse(response);
@@ -52,10 +61,15 @@ class AuthRepository {
     double? longitude,
     Map<String, dynamic>? workingHours,
     Map<String, dynamic>? socialLinks,
+    // User location fields
+    String? userCity,
+    double? userLatitude,
+    double? userLongitude,
+    File? coverImage,
+    bool locationSharingEnabled = true,
   }) async {
     try {
-      final response =
-          await _dio.post(ApiEndpoints.registerProjectOwner, data: {
+      final formData = FormData.fromMap({
         'email': email,
         'password': password,
         'fullName': fullName,
@@ -70,7 +84,23 @@ class AuthRepository {
         if (longitude != null) 'longitude': longitude,
         if (workingHours != null) 'workingHours': workingHours,
         if (socialLinks != null) 'socialLinks': socialLinks,
+        if (userCity != null) 'userCity': userCity,
+        if (userLatitude != null) 'userLatitude': userLatitude,
+        if (userLongitude != null) 'userLongitude': userLongitude,
+        'locationSharingEnabled': locationSharingEnabled,
       });
+
+      if (coverImage != null) {
+        formData.files.add(MapEntry(
+          'coverImage',
+          await MultipartFile.fromFile(coverImage.path),
+        ));
+      }
+
+      final response = await _dio.post(
+        ApiEndpoints.registerProjectOwner,
+        data: formData,
+      );
 
       return _handleAuthResponse(response);
     } on DioException catch (e) {
@@ -121,12 +151,24 @@ class AuthRepository {
     String? fullName,
     String? phone,
     String? language,
+    String? city,
+    double? latitude,
+    double? longitude,
+    bool? locationSharingEnabled,
+    bool? notificationsEnabled,
   }) async {
     try {
       final response = await _dio.put(ApiEndpoints.me, data: {
         if (fullName != null) 'fullName': fullName,
         if (phone != null) 'phone': phone,
         if (language != null) 'language': language,
+        if (city != null) 'city': city,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
+        if (locationSharingEnabled != null)
+          'locationSharingEnabled': locationSharingEnabled,
+        if (notificationsEnabled != null)
+          'notificationsEnabled': notificationsEnabled,
       });
 
       final data = response.data['data'];

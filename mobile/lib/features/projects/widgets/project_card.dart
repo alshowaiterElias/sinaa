@@ -69,6 +69,41 @@ class ProjectCard extends ConsumerWidget {
                       ),
                     ),
 
+                  // Distance Badge (when nearby search results)
+                  if (project.hasDistance)
+                    Positioned(
+                      bottom: 12,
+                      left: isRtl ? null : 12,
+                      right: isRtl ? 12 : null,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.near_me_outlined,
+                              size: 12,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              project.formattedDistance,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
                   // Status Badge (if owner view or special status)
                   if (!project.isApproved)
                     Positioned(

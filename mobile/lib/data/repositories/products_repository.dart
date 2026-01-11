@@ -21,6 +21,10 @@ class ProductsRepository {
     int? projectId,
     String? search,
     String? status,
+    double? minPrice,
+    double? maxPrice,
+    double? minRating,
+    String? sort,
   }) async {
     try {
       final Map<String, dynamic> queryParams = {
@@ -32,6 +36,10 @@ class ProductsRepository {
       if (projectId != null) queryParams['projectId'] = projectId;
       if (search != null) queryParams['search'] = search;
       if (status != null) queryParams['status'] = status;
+      if (minPrice != null) queryParams['minPrice'] = minPrice;
+      if (maxPrice != null) queryParams['maxPrice'] = maxPrice;
+      if (minRating != null) queryParams['minRating'] = minRating;
+      if (sort != null) queryParams['sort'] = sort;
 
       final response = await _dio.get(
         ApiEndpoints.products,

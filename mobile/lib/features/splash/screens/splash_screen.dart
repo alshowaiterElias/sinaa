@@ -182,7 +182,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                 ],
                               ).createShader(bounds),
                               child: Text(
-                                'صنعة',
+                                '4All',
                                 style: Theme.of(context)
                                     .textTheme
                                     .displayLarge

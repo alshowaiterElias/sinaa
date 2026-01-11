@@ -8,6 +8,7 @@ import '../../../data/models/product_model.dart';
 import '../../../data/models/category.dart';
 import '../../../data/repositories/products_repository.dart';
 import '../../../data/providers/categories_provider.dart';
+import '../../../shared/widgets/custom_text_field.dart';
 import 'product_form_screen.dart';
 import 'product_detail_screen.dart';
 
@@ -44,9 +45,19 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
   List<Category> _subcategories = [];
   int? _selectedSubcategoryId;
 
+  // Search and Filter state
+  late TextEditingController _searchController;
+  String _sortBy = 'newest';
+  double? _minPrice;
+  double? _maxPrice;
+  double? _minRating;
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
+    _searchController = TextEditingController(text: widget.searchQuery);
+    _searchQuery = widget.searchQuery ?? '';
     _loadProducts();
     _scrollController.addListener(_onScroll);
 
@@ -57,7 +68,9 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
   }
 
   @override
+  @override
   void dispose() {
+    _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -121,8 +134,12 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
         limit: 20,
         categoryId: _selectedSubcategoryId ?? widget.categoryId,
         projectId: widget.projectId,
-        search: widget.searchQuery,
+        search: _searchQuery.isEmpty ? null : _searchQuery,
         status: widget.isOwner ? 'all' : 'approved',
+        sort: _sortBy,
+        minPrice: _minPrice,
+        maxPrice: _maxPrice,
+        minRating: _minRating,
       );
       setState(() {
         _products = response.products;
@@ -152,8 +169,12 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
         limit: 20,
         categoryId: _selectedSubcategoryId ?? widget.categoryId,
         projectId: widget.projectId,
-        search: widget.searchQuery,
+        search: _searchQuery.isEmpty ? null : _searchQuery,
         status: widget.isOwner ? 'all' : 'approved',
+        sort: _sortBy,
+        minPrice: _minPrice,
+        maxPrice: _maxPrice,
+        minRating: _minRating,
       );
       setState(() {
         _products.addAll(response.products);
@@ -245,11 +266,34 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                   child: const Icon(Icons.filter_list_rounded,
                       color: Colors.white, size: 18),
                 ),
-                onPressed: () {
-                  // TODO: Show filter dialog
-                },
+                onPressed: _showFilterSheet,
               ),
             ],
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(70),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                child: SearchTextField(
+                  controller: _searchController,
+                  hint: l10n.tr('searchPlaceholder'),
+                  onChanged: (value) {
+                    _searchQuery = value;
+                    // Debounce could be added here
+                  },
+                  onSubmitted: (value) {
+                    _searchQuery = value;
+                    _loadProducts();
+                  },
+                  onClear: () {
+                    _searchController.clear();
+                    setState(() {
+                      _searchQuery = '';
+                    });
+                    _loadProducts();
+                  },
+                ),
+              ),
+            ),
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: const BoxDecoration(
@@ -407,8 +451,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
       floatingActionButton: widget.isOwner
           ? FloatingActionButton.extended(
               onPressed: _navigateToAddProduct,
-              icon: const Icon(Icons.add),
-              label: Text("+"),
+              label: Text(l10n.tr('addProduct')),
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
             )
@@ -665,5 +708,268 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
       default:
         return status;
     }
+  }
+
+  void _showFilterSheet() {
+    final l10n = context.l10n;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Container(
+          height: MediaQuery.of(context).size.height * 0.85,
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            children: [
+              // Handle
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      l10n.tr('filterResults'),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setSheetState(() {
+                          _sortBy = 'newest';
+                          _minPrice = null;
+                          _maxPrice = null;
+                          _minRating = null;
+                        });
+                      },
+                      child: Text(l10n.tr('reset')),
+                    ),
+                  ],
+                ),
+              ),
+
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Sort By
+                      Text(
+                        l10n.tr('sortBy'),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          _buildSortChip(
+                            context,
+                            l10n.tr('location.sortByNewest'),
+                            'newest',
+                            Icons.schedule_rounded,
+                            setSheetState,
+                          ),
+                          _buildSortChip(
+                            context,
+                            l10n.tr('priceLowToHigh'), // Add to l10n later
+                            'price_asc',
+                            Icons.arrow_upward_rounded,
+                            setSheetState,
+                          ),
+                          _buildSortChip(
+                            context,
+                            l10n.tr('priceHighToLow'), // Add to l10n later
+                            'price_desc',
+                            Icons.arrow_downward_rounded,
+                            setSheetState,
+                          ),
+                          _buildSortChip(
+                            context,
+                            l10n.tr('rating'),
+                            'rating',
+                            Icons.star_rounded,
+                            setSheetState,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Price Range
+                      Text(
+                        l10n.tr('price'),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              decoration: InputDecoration(
+                                hintText: l10n.tr('min'),
+                                prefixText: 'SAR ',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
+                              ),
+                              keyboardType: TextInputType.number,
+                              onChanged: (val) =>
+                                  _minPrice = double.tryParse(val),
+                              controller: TextEditingController(
+                                  text: _minPrice?.toStringAsFixed(0) ?? ''),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: TextField(
+                              decoration: InputDecoration(
+                                hintText: l10n.tr('max'),
+                                prefixText: 'SAR ',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
+                              ),
+                              keyboardType: TextInputType.number,
+                              onChanged: (val) =>
+                                  _maxPrice = double.tryParse(val),
+                              controller: TextEditingController(
+                                  text: _maxPrice?.toStringAsFixed(0) ?? ''),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Rating
+                      Text(
+                        l10n.tr('rating'),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                      ),
+                      const SizedBox(height: 12),
+                      Column(
+                        children: [4, 3, 2, 1].map((rating) {
+                          return RadioListTile<double>(
+                            value: rating.toDouble(),
+                            groupValue: _minRating,
+                            onChanged: (value) {
+                              setSheetState(() {
+                                _minRating = value;
+                              });
+                            },
+                            title: Row(
+                              children: [
+                                Text('$rating+ '),
+                                const Icon(Icons.star_rounded,
+                                    color: AppColors.warning, size: 16),
+                              ],
+                            ),
+                            activeColor: AppColors.primary,
+                            contentPadding: EdgeInsets.zero,
+                            dense: true,
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 40),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Apply Button
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _loadProducts();
+                    },
+                    child: Text(l10n.tr('apply')),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSortChip(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+    StateSetter setSheetState,
+  ) {
+    final isSelected = _sortBy == value;
+    return GestureDetector(
+      onTap: () {
+        setSheetState(() {
+          _sortBy = value;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.divider,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

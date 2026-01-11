@@ -16,12 +16,14 @@ import transactionsRoutes from './transactions.routes';
 import reviewsRoutes from './reviews.routes';
 import adminReviewsRoutes from './admin.reviews.routes';
 import favoritesRoutes from './favorites.routes';
+import usersRoutes from './users.routes';
 import { authenticate, adminOnly } from '../middleware/auth';
 
 const router = Router();
 
 // Mount routes
 router.use('/auth', authRoutes);
+router.use('/users', usersRoutes);
 router.use('/categories', categoriesRoutes);
 router.use('/projects', projectRoutes);
 router.use('/products', productRoutes);

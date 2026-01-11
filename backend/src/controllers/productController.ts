@@ -49,6 +49,7 @@ export const getAllProducts = async (req: Request, res: Response) => {
             status,
             minPrice,
             maxPrice,
+            minRating,
             sort = 'newest',
         } = req.query;
 
@@ -70,6 +71,27 @@ export const getAllProducts = async (req: Request, res: Response) => {
         // Filter by project if provided
         if (projectId) {
             where.projectId = projectId;
+        }
+
+        // Exclude own products if user is logged in
+        if (req.user) {
+            console.log('DEBUG: User is logged in:', req.user.id);
+            // If we are NOT filtering by specific project (e.g. looking at own project), exclude own products
+            // But wait, if I am looking at my own project, I SHOULD see my products?
+            // The user said "home screen filtering (still showing own products/projects)".
+            // So on Home Screen (no projectId filter usually), we should exclude own products.
+
+            if (!projectId) {
+                console.log('DEBUG: Excluding products with project.ownerId:', req.user.id);
+                // We need to filter by project owner. Product -> Project -> Owner
+                // This is complex in Sequelize with simple where.
+                // Easier: Get user's project ID and exclude products from that project.
+                const userProject = await Project.findOne({ where: { ownerId: req.user.id } });
+                if (userProject) {
+                    console.log('DEBUG: Excluding products from project:', userProject.id);
+                    where.projectId = { [Op.ne]: userProject.id };
+                }
+            }
         }
 
         if (search) {

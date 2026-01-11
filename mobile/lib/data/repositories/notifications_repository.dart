@@ -72,6 +72,15 @@ class NotificationsRepository {
       throw ApiException.fromDioError(e);
     }
   }
+
+  /// Delete all notifications
+  Future<void> deleteAll() async {
+    try {
+      await _dio.delete(ApiEndpoints.notifications);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
 }
 
 /// Provider for notifications repository

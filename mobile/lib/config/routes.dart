@@ -10,6 +10,7 @@ import '../features/auth/screens/project_owner_register_screen.dart';
 import '../features/auth/screens/forgot_password_screen.dart';
 import '../features/auth/screens/reset_password_screen.dart';
 import '../features/home/screens/home_screen.dart';
+import '../features/projects/screens/project_list_screen.dart';
 import '../features/search/screens/search_screen.dart';
 import '../features/cart/screens/cart_screen.dart';
 import '../features/chat/screens/conversations_screen.dart';
@@ -39,6 +40,7 @@ import '../features/support/screens/ticket_detail_screen.dart';
 import '../features/transactions/screens/transactions_screen.dart';
 import '../features/transactions/screens/transaction_detail_screen.dart';
 import '../features/transactions/screens/create_review_screen.dart';
+import '../features/support/screens/static_content_screen.dart';
 import '../shared/widgets/main_scaffold.dart';
 import '../data/providers/auth_provider.dart';
 import '../core/localization/app_localizations.dart';
@@ -85,23 +87,41 @@ class Routes {
   static const String createReview = '/transactions/:transactionId/review';
   static const String categoryRequests = '/category-requests';
   static const String favorites = '/favorites';
+  static const String projectList = '/projects';
+  static const String productList = '/products';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
+  final notifier = RouterNotifier(ref);
+
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
+    refreshListenable: notifier,
     initialLocation: Routes.splash,
     debugLogDiagnostics: true,
     redirect: (context, state) {
       final authState = ref.read(authStateProvider);
       final isLoggedIn = authState.isAuthenticated;
+      final isInitialized = authState.isInitialized;
       final location = state.matchedLocation;
+
+      debugPrint('Router Redirect: Location: $location, '
+          'Auth: $isLoggedIn, Init: $isInitialized');
+
+      // Don't redirect until auth is initialized
+      if (!isInitialized && location != Routes.splash) {
+        return Routes.splash;
+      }
 
       // Don't redirect from splash or onboarding
       if (location == Routes.splash || location == Routes.onboarding) {
+        // If initialized and on splash, go to home or login
+        if (location == Routes.splash && isInitialized) {
+          return isLoggedIn ? Routes.home : Routes.login;
+        }
         return null;
       }
 
@@ -303,13 +323,51 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: Routes.createTicket,
-        builder: (context, state) => const CreateTicketScreen(),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return CreateTicketScreen(
+            initialSubject: extra?['initialSubject'] as String?,
+            initialDescription: extra?['initialDescription'] as String?,
+          );
+        },
       ),
       GoRoute(
         path: Routes.ticketDetail,
         builder: (context, state) {
           final ticketId = int.parse(state.pathParameters['ticketId']!);
           return TicketDetailScreen(ticketId: ticketId);
+        },
+      ),
+
+      // Static Support Pages
+      GoRoute(
+        path: '/support/contact',
+        builder: (context, state) {
+          final l10n = AppLocalizations.of(context)!;
+          return StaticContentScreen(
+            title: l10n.tr('contactUs'),
+            contentKey: 'contact_us',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/support/privacy',
+        builder: (context, state) {
+          final l10n = AppLocalizations.of(context)!;
+          return StaticContentScreen(
+            title: l10n.tr('privacyPolicy'),
+            contentKey: 'privacy_policy',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/support/terms',
+        builder: (context, state) {
+          final l10n = AppLocalizations.of(context)!;
+          return StaticContentScreen(
+            title: l10n.tr('termsOfService'),
+            contentKey: 'terms_of_service',
+          );
         },
       ),
 
@@ -350,6 +408,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.favorites,
         builder: (context, state) => const FavoritesScreen(),
+      ),
+
+      // Project List
+      GoRoute(
+        path: Routes.projectList,
+        builder: (context, state) => const ProjectListScreen(),
+      ),
+
+      // Product List (General)
+      GoRoute(
+        path: Routes.productList,
+        builder: (context, state) => const ProductListScreen(),
       ),
 
       // Main app shell with bottom navigation
@@ -417,3 +487,18 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
   );
 });
+
+/// Notifier to listen to auth state changes and trigger router refresh
+class RouterNotifier extends ChangeNotifier {
+  final Ref _ref;
+
+  RouterNotifier(this._ref) {
+    _ref.listen(authStateProvider, (previous, next) {
+      debugPrint('RouterNotifier: Auth state changed. '
+          'Prev auth: ${previous?.isAuthenticated}, '
+          'Next auth: ${next.isAuthenticated}, '
+          'Next init: ${next.isInitialized}');
+      notifyListeners();
+    });
+  }
+}

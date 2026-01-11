@@ -22,6 +22,9 @@ class Project extends Equatable {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// Distance from user in km (only populated in location-based search)
+  final double? distance;
+
   const Project({
     required this.id,
     required this.ownerId,
@@ -43,6 +46,7 @@ class Project extends Equatable {
     required this.totalReviews,
     required this.createdAt,
     required this.updatedAt,
+    this.distance,
   });
 
   factory Project.fromJson(Map<String, dynamic> json) {
@@ -76,6 +80,9 @@ class Project extends Equatable {
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)
           : DateTime.now(),
+      distance: json['distance'] != null
+          ? double.tryParse(json['distance'].toString())
+          : null,
     );
   }
 
@@ -101,6 +108,7 @@ class Project extends Equatable {
       'totalReviews': totalReviews,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'distance': distance,
     };
   }
 
@@ -108,6 +116,12 @@ class Project extends Equatable {
   bool get isPending => status == 'pending';
   bool get isRejected => status == 'rejected';
   bool get isDisabled => status == 'disabled';
+  bool get hasLocation => latitude != null && longitude != null;
+  bool get hasDistance => distance != null;
+
+  /// Returns formatted distance string (e.g., "2.5 km")
+  String get formattedDistance =>
+      distance != null ? '${distance!.toStringAsFixed(1)} km' : '';
 
   @override
   List<Object?> get props => [
@@ -119,5 +133,6 @@ class Project extends Equatable {
         status,
         averageRating,
         totalReviews,
+        distance,
       ];
 }

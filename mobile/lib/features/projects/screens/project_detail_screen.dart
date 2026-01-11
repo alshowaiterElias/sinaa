@@ -255,8 +255,9 @@ class ProjectDetailScreen extends ConsumerWidget {
                 error: (error, _) => SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
-                    child:
-                        Center(child: Text('Error loading products: $error')),
+                    child: Center(
+                        child: Text(
+                            '${context.l10n.tr('errorLoadingProducts')}: $error')),
                   ),
                 ),
               ),
@@ -266,7 +267,8 @@ class ProjectDetailScreen extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Error: $error')),
+        error: (error, _) =>
+            Center(child: Text('${context.l10n.tr('error')}: $error')),
       ),
     );
   }
@@ -351,7 +353,7 @@ class _FavoriteButtonState extends ConsumerState<_FavoriteButton> {
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text('${context.l10n.tr('error')}: $e')),
         );
       }
     }

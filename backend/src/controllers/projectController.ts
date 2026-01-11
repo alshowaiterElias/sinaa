@@ -12,24 +12,43 @@ import {
     sendConflict,
 } from '../utils/helpers';
 import { NotificationTemplates } from '../services/notification.service';
+import {
+    calculateDistance,
+    formatDistance,
+    getBoundingBox,
+    isValidLatitude,
+    isValidLongitude,
+    DEFAULT_SEARCH_RADIUS_KM,
+    MAX_SEARCH_RADIUS_KM,
+} from '../utils/geo';
 
 // ==================== Public/User Endpoints ====================
 
 /**
- * Get all approved projects with pagination and filtering
+ * Get all approved projects with pagination, filtering, and optional location-based search
+ * 
+ * Query params:
+ * - city: filter by city name
+ * - search: text search in name/description
+ * - lat: user latitude (for distance calculation)
+ * - lon: user longitude (for distance calculation)
+ * - radius: search radius in km (default 50, max 100)
+ * - sortBy: 'distance' | 'rating' | 'newest' (default 'rating')
  */
 export const getProjects = async (req: Request, res: Response) => {
     const { page, limit, offset } = getPaginationParams(req.query as any);
-    const { city, search } = req.query;
+    const { city, search, lat, lon, radius, sortBy } = req.query;
 
     const where: any = {
         status: PROJECT_STATUS.APPROVED,
     };
 
+    // City filter
     if (city) {
         where.city = city;
     }
 
+    // Text search filter
     if (search) {
         where[Op.or] = [
             { name: { [Op.like]: `%${search}%` } },
@@ -39,11 +58,69 @@ export const getProjects = async (req: Request, res: Response) => {
         ];
     }
 
+    // Filter by minimum rating
+    if (req.query.minRating) {
+        where.averageRating = {
+            [Op.gte]: Number(req.query.minRating)
+        };
+    }
+
+    // Exclude own project if user is logged in
+    if (req.user) {
+        console.log('DEBUG: User is logged in:', req.user.id);
+        where.ownerId = {
+            [Op.ne]: req.user.id
+        };
+        console.log('DEBUG: Excluding project with ownerId:', req.user.id);
+    } else {
+        console.log('DEBUG: User is NOT logged in');
+    }
+
+    // Location-based search
+    const userLat = lat ? parseFloat(lat as string) : null;
+    const userLon = lon ? parseFloat(lon as string) : null;
+    const searchRadius = radius
+        ? Math.min(Math.max(1, parseInt(radius as string)), MAX_SEARCH_RADIUS_KM)
+        : DEFAULT_SEARCH_RADIUS_KM;
+    const orderBy = sortBy as string || 'rating';
+
+    // Validate coordinates if provided
+    if (userLat !== null || userLon !== null) {
+        if (userLat === null || userLon === null) {
+            return sendError(res, 'VALIDATION_ERROR', 'Both lat and lon must be provided together', 400);
+        }
+        if (!isValidLatitude(userLat)) {
+            return sendError(res, 'VALIDATION_ERROR', 'Invalid latitude. Must be between -90 and 90.', 400);
+        }
+        if (!isValidLongitude(userLon)) {
+            return sendError(res, 'VALIDATION_ERROR', 'Invalid longitude. Must be between -180 and 180.', 400);
+        }
+
+        // Add bounding box filter for initial spatial filtering (optimization)
+        const boundingBox = getBoundingBox(userLat, userLon, searchRadius);
+        where.latitude = {
+            [Op.not]: null,
+            [Op.between]: [boundingBox.minLat, boundingBox.maxLat],
+        };
+        where.longitude = {
+            [Op.not]: null,
+            [Op.between]: [boundingBox.minLon, boundingBox.maxLon],
+        };
+    }
+
+    // Determine sort order
+    let order: any[] = [['averageRating', 'DESC']];
+    if (orderBy === 'newest') {
+        order = [['createdAt', 'DESC']];
+    }
+    // Note: distance sorting is done in-memory after fetching
+
+    // Fetch projects
     const { count, rows } = await Project.findAndCountAll({
         where,
-        limit,
-        offset,
-        order: [['averageRating', 'DESC']],
+        limit: userLat !== null ? undefined : limit, // Fetch all for distance sorting, then paginate
+        offset: userLat !== null ? undefined : offset,
+        order,
         include: [
             {
                 model: User,
@@ -53,7 +130,46 @@ export const getProjects = async (req: Request, res: Response) => {
         ],
     });
 
-    return sendPaginated(res, rows, {
+    let projectsWithDistance: Array<any> = rows.map(project => project.toJSON());
+
+    // Calculate distances and filter by radius if location provided
+    if (userLat !== null && userLon !== null) {
+        projectsWithDistance = projectsWithDistance
+            .map(project => {
+                if (project.latitude && project.longitude) {
+                    const distance = calculateDistance(
+                        userLat,
+                        userLon,
+                        Number(project.latitude),
+                        Number(project.longitude)
+                    );
+                    return { ...project, distance: formatDistance(distance) };
+                }
+                return { ...project, distance: null };
+            })
+            .filter(project => {
+                // Filter out projects without coordinates or outside radius
+                if (project.distance === null) return false;
+                return project.distance <= searchRadius;
+            });
+
+        // Sort by distance if requested
+        if (orderBy === 'distance') {
+            projectsWithDistance.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+        }
+
+        // Apply pagination manually after filtering
+        const totalFiltered = projectsWithDistance.length;
+        projectsWithDistance = projectsWithDistance.slice(offset, offset + limit);
+
+        return sendPaginated(res, projectsWithDistance, {
+            page,
+            limit,
+            total: totalFiltered,
+        });
+    }
+
+    return sendPaginated(res, projectsWithDistance, {
         page,
         limit,
         total: count,
@@ -216,6 +332,11 @@ export const updateProject = async (req: Request, res: Response) => {
     delete updates.rejectionReason;
     delete updates.averageRating;
     delete updates.totalReviews;
+
+    // Handle cover image
+    if (req.file) {
+        updates.coverUrl = `/uploads/projects/${req.file.filename}`;
+    }
 
     // If user is updating project info (not admin), set status back to pending for re-approval
     const isAdmin = req.user?.role === 'admin';
