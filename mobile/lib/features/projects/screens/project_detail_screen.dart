@@ -13,6 +13,8 @@ import '../../../data/repositories/favorites_repository.dart';
 import '../widgets/product_card.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_endpoints.dart';
+
 class ProjectDetailScreen extends ConsumerWidget {
   final int projectId;
 
@@ -43,7 +45,7 @@ class ProjectDetailScreen extends ConsumerWidget {
                 flexibleSpace: FlexibleSpaceBar(
                   background: project.coverUrl != null
                       ? CachedNetworkImage(
-                          imageUrl: project.coverUrl!,
+                          imageUrl: ApiEndpoints.imageUrl(project.coverUrl),
                           fit: BoxFit.cover,
                           placeholder: (context, url) => Container(
                             color: AppColors.surfaceVariant,
@@ -96,7 +98,8 @@ class ProjectDetailScreen extends ConsumerWidget {
                             clipBehavior: Clip.antiAlias,
                             child: project.logoUrl != null
                                 ? CachedNetworkImage(
-                                    imageUrl: project.logoUrl!,
+                                    imageUrl:
+                                        ApiEndpoints.imageUrl(project.logoUrl),
                                     fit: BoxFit.cover,
                                   )
                                 : const Icon(Icons.store,

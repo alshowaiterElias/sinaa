@@ -43,7 +43,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(l10n.tr('notifications.title')),
+        title: Text(l10n.tr('notification.title')),
         actions: [
           if (state.unreadCount > 0)
             TextButton(
@@ -210,14 +210,14 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             ),
             const SizedBox(height: 32),
             Text(
-              l10n.tr('noNotifications'),
+              l10n.tr('notification.noNotifications'),
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
             const SizedBox(height: 12),
             Text(
-              l10n.tr('noNotificationsMessage'),
+              l10n.tr('notification.noNotificationsMessage'),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
                     height: 1.6,

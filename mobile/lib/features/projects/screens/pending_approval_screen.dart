@@ -72,7 +72,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                     // Go to home instead of back
                     context.go(Routes.home);
                   },
-                  child: Text(l10n.tr('home.title')),
+                  child: Text(l10n.tr('homeTitle')),
                 ),
               ],
             ),

@@ -27,6 +27,7 @@
   "apply": "تطبيق",
   "reset": "إعادة تعيين",
   "auth": {
+    "locationInfoMessage": "هذا موقعك الشخصي بصفتك عميل و ليس صاحب مشروع",
     "login": "تسجيل الدخول",
     "register": "إنشاء حساب",
     "logout": "تسجيل الخروج",
@@ -395,5 +396,11 @@
   "allSubCategories": "كل الفرعية",
   "failedToLoadCategories": "فشل تحميل الفئات",
   "noCategories": "لا توجد فئات",
-  "addProduct": "إضافة"
+  "addProduct": "إضافة",
+  "homeTitle": "الرئيسية",
+  "notification": {
+    "title": "الاشعارات",
+    "noNotifications": "لا توجد اشعارات",
+    "noNotificationsMessage": "لم تستلم اشعارات بعد"
+  }
 }

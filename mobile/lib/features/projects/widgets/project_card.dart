@@ -7,6 +7,8 @@ import '../../../config/theme.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../data/models/project_model.dart';
 
+import '../../../core/network/api_endpoints.dart';
+
 class ProjectCard extends ConsumerWidget {
   final Project project;
   final VoidCallback? onTap;
@@ -41,7 +43,7 @@ class ProjectCard extends ConsumerWidget {
                 children: [
                   if (project.coverUrl != null)
                     CachedNetworkImage(
-                      imageUrl: project.coverUrl!,
+                      imageUrl: ApiEndpoints.imageUrl(project.coverUrl),
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
@@ -147,7 +149,7 @@ class ProjectCard extends ConsumerWidget {
                     clipBehavior: Clip.antiAlias,
                     child: project.logoUrl != null
                         ? CachedNetworkImage(
-                            imageUrl: project.logoUrl!,
+                            imageUrl: ApiEndpoints.imageUrl(project.logoUrl),
                             fit: BoxFit.cover,
                             errorWidget: (context, url, error) =>
                                 const Icon(Icons.person),

@@ -2,6 +2,7 @@
   "appName": "Sina'a",
   "appTagline": "Family Marketplace",
   "home": "Home",
+  "homeTitle": "Home Screen",
   "search": "Search",
   "cart": "Cart",
   "navMessages": "Messages",
@@ -26,6 +27,7 @@
   "apply": "Apply",
   "reset": "Reset",
   "auth": {
+    "locationInfoMessage": "This is your personal location not your project location, used for your customer account",
     "login": "Login",
     "register": "Register",
     "logout": "Logout",
@@ -395,5 +397,10 @@
   "allSubCategories": "All Subcategories",
   "failedToLoadCategories": "Failed to load categories",
   "noCategories": "No categories",
-  "addProduct": "Add"
+  "addProduct": "Add",
+  "notification": {
+    "title": "Notifications",
+    "noNotifications": "You have no notifications",
+    "noNotificationsMessage": "You haven't received any notifications yet"
+  }
 }
