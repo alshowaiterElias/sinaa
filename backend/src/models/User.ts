@@ -21,6 +21,9 @@ export interface UserAttributes {
   isActive: boolean;
   isBanned: boolean;
   banReason: string | null;
+  isVerified: boolean;
+  verificationToken: string | null;
+  verificationTokenExpires: Date | null;
   refreshToken: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -44,6 +47,9 @@ export interface UserCreationAttributes
     | 'isActive'
     | 'isBanned'
     | 'banReason'
+    | 'isVerified'
+    | 'verificationToken'
+    | 'verificationTokenExpires'
     | 'refreshToken'
     | 'createdAt'
     | 'updatedAt'
@@ -68,6 +74,9 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public isActive!: boolean;
   public isBanned!: boolean;
   public banReason!: string | null;
+  public isVerified!: boolean;
+  public verificationToken!: string | null;
+  public verificationTokenExpires!: Date | null;
   public refreshToken!: string | null;
   public createdAt!: Date;
   public updatedAt!: Date;
@@ -179,6 +188,21 @@ User.init(
       type: DataTypes.TEXT,
       allowNull: true,
       field: 'ban_reason',
+    },
+    isVerified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      field: 'is_verified',
+    },
+    verificationToken: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: 'verification_token',
+    },
+    verificationTokenExpires: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'verification_token_expires',
     },
     refreshToken: {
       type: DataTypes.STRING(500),

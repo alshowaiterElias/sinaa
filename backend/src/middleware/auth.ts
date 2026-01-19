@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, TokenPayload } from '../utils/jwt';
-import { sendUnauthorized, sendForbidden } from '../utils/helpers';
+import { sendUnauthorized, sendForbidden, sendError } from '../utils/helpers';
 import { User } from '../models';
-import { UserRole, USER_ROLES } from '../config/constants';
+import { UserRole, USER_ROLES, ERROR_CODES } from '../config/constants';
 
 // Extend Express Request type to include user
 declare global {
@@ -54,6 +54,12 @@ export const authenticate = async (
         return;
       }
       sendForbidden(res, 'Account is deactivated');
+      return;
+    }
+
+    // Check if email is verified
+    if (!user.isVerified) {
+      sendError(res, ERROR_CODES.EMAIL_NOT_VERIFIED, 'Email not verified', 403);
       return;
     }
 

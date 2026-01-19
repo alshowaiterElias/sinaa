@@ -16,6 +16,9 @@ import {
 import { ERROR_CODES, USER_ROLES, PROJECT_STATUS } from '../config/constants';
 import { asyncHandler } from '../middleware/errorHandler';
 import sequelize from '../config/database';
+import { sendVerificationEmail } from '../services/email.service';
+import crypto from 'crypto';
+import { logger } from '../utils/logger';
 
 /**
  * Register a new customer
@@ -56,6 +59,9 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   });
 
   // Create user data object explicitly
+  const verificationToken = crypto.randomInt(100000, 999999).toString();
+  const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
   const userData = {
     email,
     passwordHash,
@@ -68,12 +74,18 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     locationSharingEnabled: locationSharingEnabled !== false, // Default to true
     locationUpdatedAt: hasLocation || city ? new Date() : null,
     role: USER_ROLES.CUSTOMER,
+    verificationToken,
+    verificationTokenExpires,
+    isVerified: false,
   };
 
-  console.log('[REGISTER] Creating user with data:', userData);
+  logger.info('[REGISTER] Creating user with data:', { ...userData, passwordHash: '***' });
 
   // Create user
   const user = await User.create(userData);
+
+  // Send verification email
+  await sendVerificationEmail(user.email, verificationToken);
 
   // Generate tokens
   const tokenPayload: TokenPayload = {
@@ -86,6 +98,8 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   // Save refresh token
   await user.update({ refreshToken: tokens.refreshToken });
 
+  logger.info(`[REGISTER] User registered successfully: ${user.id}`);
+
   return sendSuccess(
     res,
     {
@@ -93,7 +107,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
     },
-    'Registration successful',
+    'Registration successful. Please check your email to verify your account.',
     201
   );
 });
@@ -139,6 +153,9 @@ export const registerProjectOwner = asyncHandler(
       // Hash password
       const passwordHash = await hashPassword(password);
 
+      const verificationToken = crypto.randomInt(100000, 999999).toString();
+      const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
       // Create user
       const user = await User.create(
         {
@@ -153,6 +170,9 @@ export const registerProjectOwner = asyncHandler(
           longitude: userLongitude || null,
           locationSharingEnabled: locationSharingEnabled !== false,
           locationUpdatedAt: userLatitude || userCity ? new Date() : null,
+          verificationToken,
+          verificationTokenExpires,
+          isVerified: false,
         },
         { transaction }
       );
@@ -179,6 +199,9 @@ export const registerProjectOwner = asyncHandler(
       // Commit transaction
       await transaction.commit();
 
+      // Send verification email
+      await sendVerificationEmail(user.email, verificationToken);
+
       // Generate tokens
       const tokenPayload: TokenPayload = {
         userId: user.id,
@@ -190,6 +213,8 @@ export const registerProjectOwner = asyncHandler(
       // Save refresh token
       await user.update({ refreshToken: tokens.refreshToken });
 
+      logger.info(`[REGISTER_PO] Project Owner registered successfully: ${user.id}`);
+
       return sendSuccess(
         res,
         {
@@ -197,11 +222,12 @@ export const registerProjectOwner = asyncHandler(
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,
         },
-        'Registration successful. Your project is pending approval.',
+        'Registration successful. Please check your email to verify your account. Your project is pending approval.',
         201
       );
     } catch (error) {
       await transaction.rollback();
+      logger.error('[REGISTER_PO] Error registering project owner', { error });
       throw error;
     }
   }
@@ -561,4 +587,80 @@ export const adminLogin = asyncHandler(async (req: Request, res: Response) => {
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
   });
+});
+
+/**
+ * Verify email
+ * POST /auth/verify-email
+ */
+export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
+  const { token } = req.body;
+
+  if (!token) {
+    return sendError(res, ERROR_CODES.VALIDATION_ERROR, 'Token is required', 400);
+  }
+
+  const user = await User.findOne({ where: { verificationToken: token } });
+
+  if (!user) {
+    return sendError(res, ERROR_CODES.VALIDATION_ERROR, 'Invalid verification token', 400);
+  }
+
+  if (user.isVerified) {
+    return sendSuccess(res, null, 'Email already verified');
+  }
+
+  if (user.verificationTokenExpires && user.verificationTokenExpires < new Date()) {
+    return sendError(res, ERROR_CODES.VALIDATION_ERROR, 'Verification token expired', 400);
+  }
+
+  // Update user
+  await user.update({
+    isVerified: true,
+    verificationToken: null,
+    verificationTokenExpires: null,
+  });
+
+  logger.info(`[VERIFY_EMAIL] User verified successfully: ${user.id}`);
+
+  return sendSuccess(res, null, 'Email verified successfully');
+});
+
+/**
+ * Resend verification email
+ * POST /auth/resend-verification
+ */
+export const resendVerificationEmail = asyncHandler(async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return sendError(res, ERROR_CODES.VALIDATION_ERROR, 'Email is required', 400);
+  }
+
+  const user = await User.findOne({ where: { email } });
+
+  if (!user) {
+    // Return success to prevent email enumeration
+    return sendSuccess(res, null, 'If an account exists, a verification email has been sent');
+  }
+
+  if (user.isVerified) {
+    return sendSuccess(res, null, 'Email already verified');
+  }
+
+  // Generate new token
+  const verificationToken = crypto.randomInt(100000, 999999).toString();
+  const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+  await user.update({
+    verificationToken,
+    verificationTokenExpires,
+  });
+
+  // Send email
+  await sendVerificationEmail(user.email, verificationToken);
+
+  logger.info(`[RESEND_VERIFICATION] Verification email resent to: ${email}`);
+
+  return sendSuccess(res, null, 'Verification email sent');
 });

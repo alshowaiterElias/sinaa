@@ -11,6 +11,8 @@ import {
   forgotPassword,
   resetPassword,
   adminLogin,
+  verifyEmail,
+  resendVerificationEmail,
 } from '../controllers/auth.controller';
 import { authenticate } from '../middleware/auth';
 import { validate, authValidations } from '../middleware/validate';
@@ -31,6 +33,8 @@ router.post('/login', validate(authValidations.login), login);
 router.post('/forgot-password', validate(authValidations.forgotPassword), forgotPassword);
 router.post('/reset-password', validate(authValidations.resetPassword), resetPassword);
 router.post('/refresh', validate(authValidations.refreshToken), refreshToken);
+router.post('/verify-email', verifyEmail);
+router.post('/resend-verification', resendVerificationEmail);
 
 // Admin login (separate endpoint)
 router.post('/admin/login', validate(authValidations.login), adminLogin);
