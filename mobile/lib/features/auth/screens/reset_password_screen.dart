@@ -12,10 +12,12 @@ import '../../../shared/widgets/loading_button.dart';
 
 class ResetPasswordScreen extends ConsumerStatefulWidget {
   final String token;
+  final String email;
 
   const ResetPasswordScreen({
     super.key,
     required this.token,
+    required this.email,
   });
 
   @override
@@ -71,6 +73,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen>
     try {
       final authRepo = ref.read(authRepositoryProvider);
       await authRepo.resetPassword(
+        email: widget.email,
         token: widget.token,
         password: _passwordController.text,
       );

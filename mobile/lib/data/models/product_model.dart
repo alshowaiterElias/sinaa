@@ -141,6 +141,7 @@ class Product extends Equatable {
   final int quantity;
   final bool isAvailable;
   final String status; // 'pending', 'approved', 'rejected'
+  final bool isFeatured;
   final String? rejectionReason;
   final double averageRating;
   final int totalReviews;
@@ -175,6 +176,7 @@ class Product extends Equatable {
     this.quantity = 0,
     this.isAvailable = true,
     this.status = 'pending',
+    this.isFeatured = false,
     this.rejectionReason,
     this.averageRating = 0,
     this.totalReviews = 0,
@@ -213,6 +215,8 @@ class Product extends Equatable {
       isAvailable:
           json['isAvailable'] as bool? ?? json['is_available'] as bool? ?? true,
       status: json['status'] as String? ?? 'pending',
+      isFeatured:
+          json['isFeatured'] as bool? ?? json['is_featured'] as bool? ?? false,
       rejectionReason: json['rejectionReason'] as String? ??
           json['rejection_reason'] as String?,
       averageRating: double.tryParse(json['averageRating']?.toString() ??
@@ -266,6 +270,7 @@ class Product extends Equatable {
       'quantity': quantity,
       'isAvailable': isAvailable,
       'status': status,
+      'isFeatured': isFeatured,
       'rejectionReason': rejectionReason,
       'averageRating': averageRating,
       'totalReviews': totalReviews,

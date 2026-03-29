@@ -42,6 +42,16 @@ class CategoriesState {
     return null;
   }
 
+  /// Find parent of a category by ID
+  Category? findParent(int id) {
+    for (final parent in categories) {
+      for (final child in parent.children) {
+        if (child.id == id) return parent;
+      }
+    }
+    return null;
+  }
+
   /// Get subcategories for a parent
   List<Category> getSubcategories(int parentId) {
     for (final parent in categories) {

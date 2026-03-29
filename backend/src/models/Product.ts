@@ -14,7 +14,7 @@ export interface ProductAttributes {
     id: number;
     projectId: number;
     categoryId: number;
-    name: string;
+    name: string | null;
     nameAr: string;
     description: string | null;
     descriptionAr: string | null;
@@ -23,6 +23,7 @@ export interface ProductAttributes {
     quantity: number;
     isAvailable: boolean;
     status: ProductStatus;
+    isFeatured: boolean;
     rejectionReason: string | null;
     averageRating: number;
     totalReviews: number;
@@ -36,11 +37,13 @@ export interface ProductCreationAttributes
     extends Optional<
         ProductAttributes,
         | 'id'
+        | 'name'
         | 'description'
         | 'descriptionAr'
         | 'quantity'
         | 'isAvailable'
         | 'status'
+        | 'isFeatured'
         | 'rejectionReason'
         | 'averageRating'
         | 'totalReviews'
@@ -56,7 +59,7 @@ class Product
     public id!: number;
     public projectId!: number;
     public categoryId!: number;
-    public name!: string;
+    public name!: string | null;
     public nameAr!: string;
     public description!: string | null;
     public descriptionAr!: string | null;
@@ -65,6 +68,7 @@ class Product
     public quantity!: number;
     public isAvailable!: boolean;
     public status!: ProductStatus;
+    public isFeatured!: boolean;
     public rejectionReason!: string | null;
     public averageRating!: number;
     public totalReviews!: number;
@@ -117,7 +121,7 @@ Product.init(
         },
         name: {
             type: DataTypes.STRING(200),
-            allowNull: false,
+            allowNull: true,
         },
         nameAr: {
             type: DataTypes.STRING(200),
@@ -156,6 +160,11 @@ Product.init(
             type: DataTypes.ENUM('pending', 'approved', 'rejected'),
             defaultValue: 'pending',
         },
+        isFeatured: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+            field: 'is_featured',
+        },
         rejectionReason: {
             type: DataTypes.TEXT,
             allowNull: true,
@@ -189,6 +198,7 @@ Product.init(
         sequelize,
         tableName: 'products',
         timestamps: true,
+        paranoid: true,
         underscored: true,
         indexes: [
             { fields: ['project_id'] },
@@ -196,6 +206,7 @@ Product.init(
             { fields: ['status'] },
             { fields: ['is_available'] },
             { fields: ['average_rating'] },
+            { fields: ['is_featured'] },
         ],
     }
 );

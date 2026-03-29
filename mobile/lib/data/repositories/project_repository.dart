@@ -83,14 +83,19 @@ class ProjectsRepository {
     int projectId, {
     int page = 1,
     int limit = 20,
+    String? status,
   }) async {
     try {
+      final queryParams = <String, dynamic>{
+        'page': page,
+        'limit': limit,
+      };
+      if (status != null) {
+        queryParams['status'] = status;
+      }
       final response = await _dio.get(
         ApiEndpoints.projectProducts(projectId),
-        queryParameters: {
-          'page': page,
-          'limit': limit,
-        },
+        queryParameters: queryParams,
       );
 
       final data = response.data['data'];
@@ -167,6 +172,17 @@ class ProjectsRepository {
 
       final data = response.data['data'];
       return Project.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  /// Get distinct cities from approved projects
+  Future<List<String>> getProjectCities() async {
+    try {
+      final response = await _dio.get(ApiEndpoints.projectCities);
+      final data = response.data['data'];
+      return (data as List).map((e) => e.toString()).toList();
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }

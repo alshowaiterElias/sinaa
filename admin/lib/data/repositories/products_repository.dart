@@ -22,10 +22,7 @@ class ProductsRepository {
     String? sort,
   }) async {
     try {
-      final Map<String, dynamic> queryParams = {
-        'page': page,
-        'limit': limit,
-      };
+      final Map<String, dynamic> queryParams = {'page': page, 'limit': limit};
 
       if (status != null && status != 'all') queryParams['status'] = status;
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
@@ -106,6 +103,16 @@ class ProductsRepository {
   Future<Product> enableProduct(int id) async {
     try {
       final response = await _dio.put(ApiEndpoints.productEnable(id));
+      return Product.fromJson(response.data['data'] as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  /// Toggle featured status
+  Future<Product> toggleFeatured(int id) async {
+    try {
+      final response = await _dio.put(ApiEndpoints.productFeatured(id));
       return Product.fromJson(response.data['data'] as Map<String, dynamic>);
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);

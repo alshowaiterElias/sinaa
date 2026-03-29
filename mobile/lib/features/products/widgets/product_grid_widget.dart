@@ -226,7 +226,7 @@ class _ProductGridCard extends StatelessWidget {
                             ],
                           ),
                           child: Text(
-                            '${product.basePrice.toStringAsFixed(0)} SAR',
+                            '${product.basePrice.toStringAsFixed(0)} YER',
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,

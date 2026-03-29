@@ -61,9 +61,11 @@ class ProfileScreen extends ConsumerWidget {
                         onTap: () => context.push(Routes.myProject),
                       ),
                       _MenuItem(
-                        icon: Icons.analytics_rounded,
-                        label: l10n.tr('profile.statistics'),
-                        onTap: () {},
+                        icon: Icons.category_rounded,
+                        label: l10n.isRtl
+                            ? 'طلبات التصنيفات'
+                            : 'Category Requests',
+                        onTap: () => context.push(Routes.categoryRequests),
                       ),
                     ],
                   ),
@@ -86,13 +88,6 @@ class ProfileScreen extends ConsumerWidget {
                         label:
                             l10n.isRtl ? 'طلبات التقييم' : 'My Rating Requests',
                         onTap: () => context.push(Routes.transactions),
-                      ),
-                      _MenuItem(
-                        icon: Icons.category_rounded,
-                        label: l10n.isRtl
-                            ? 'طلبات التصنيفات'
-                            : 'Category Requests',
-                        onTap: () => context.push(Routes.categoryRequests),
                       ),
                     ],
                   ),

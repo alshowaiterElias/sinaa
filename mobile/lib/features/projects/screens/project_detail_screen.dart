@@ -197,10 +197,13 @@ class ProjectDetailScreen extends ConsumerWidget {
                 ),
               ),
 
-              // Products Grid
+              // Products Grid (grouped by category with collapsible headers)
               productsAsync.when(
                 data: (products) {
-                  if (products.isEmpty) {
+                  // Filter out rejected products
+                  final visibleProducts =
+                      products.where((p) => p.status == "approved").toList();
+                  if (visibleProducts.isEmpty) {
                     return SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.all(32),
@@ -219,33 +222,135 @@ class ProjectDetailScreen extends ConsumerWidget {
                       ),
                     );
                   }
-                  return SliverPadding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    sliver: SliverGrid(
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.75,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
+
+                  // Group products by category
+                  final groupedProducts = <String, List>{};
+                  final uncategorized = isRtl ? 'بدون تصنيف' : 'Uncategorized';
+                  for (final product in visibleProducts) {
+                    print(product.category);
+                    final categoryName = isRtl
+                        ? (product.category?.nameAr ??
+                            product.category?.name ??
+                            uncategorized)
+                        : (product.category?.name ?? uncategorized);
+                    groupedProducts.putIfAbsent(categoryName, () => []);
+                    groupedProducts[categoryName]!.add(product);
+                  }
+
+                  // If only one category group, show flat grid (no collapsible)
+                  if (groupedProducts.length <= 1) {
+                    return SliverPadding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      sliver: SliverGrid(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.75,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            return ProductCard(
+                              product: visibleProducts[index],
+                              onTap: () {
+                                context.push(
+                                  Routes.productDetail.replaceFirst(
+                                    ':productId',
+                                    visibleProducts[index].id.toString(),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                          childCount: visibleProducts.length,
+                        ),
                       ),
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          return ProductCard(
-                            product: products[index],
-                            onTap: () {
-                              context.push(
-                                Routes.productDetail.replaceFirst(
-                                  ':productId',
-                                  products[index].id.toString(),
+                    );
+                  }
+
+                  // Multiple categories: show collapsible sections
+                  return SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final categoryName =
+                            groupedProducts.keys.elementAt(index);
+                        final categoryProducts = groupedProducts[categoryName]!;
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: ExpansionTile(
+                            initiallyExpanded: true,
+                            tilePadding:
+                                const EdgeInsets.symmetric(horizontal: 8),
+                            title: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withAlpha(25),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    '${categoryProducts.length}',
+                                    style: const TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ),
-                              );
-                            },
-                          );
-                        },
-                        childCount: products.length,
-                      ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    categoryName,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
+                                child: GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    childAspectRatio: 0.75,
+                                    crossAxisSpacing: 16,
+                                    mainAxisSpacing: 16,
+                                  ),
+                                  itemCount: categoryProducts.length,
+                                  itemBuilder: (context, pIndex) {
+                                    final product = categoryProducts[pIndex];
+                                    return ProductCard(
+                                      product: product,
+                                      onTap: () {
+                                        context.push(
+                                          Routes.productDetail.replaceFirst(
+                                            ':productId',
+                                            product.id.toString(),
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      childCount: groupedProducts.length,
                     ),
                   );
                 },

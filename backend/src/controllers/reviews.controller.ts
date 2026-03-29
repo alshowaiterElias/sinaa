@@ -34,6 +34,42 @@ async function recalculateProductRating(productId: number): Promise<void> {
     );
 }
 
+// Helper to recalculate project rating from all its products' reviews
+async function recalculateProjectRating(productId: number): Promise<void> {
+    // Find the project this product belongs to
+    const product = await Product.findByPk(productId, {
+        attributes: ['id', 'projectId'],
+    });
+    if (!product || !product.projectId) return;
+
+    // Get average of all approved reviews for products in this project
+    const result = await Review.findOne({
+        where: { status: 'approved' },
+        include: [{
+            model: Product,
+            as: 'product',
+            attributes: [],
+            where: { projectId: product.projectId },
+        }],
+        attributes: [
+            [Review.sequelize!.fn('AVG', Review.sequelize!.col('Review.rating')), 'avgRating'],
+            [Review.sequelize!.fn('COUNT', Review.sequelize!.col('Review.id')), 'totalCount'],
+        ],
+        raw: true,
+    }) as any;
+
+    const averageRating = parseFloat(result?.avgRating || '0');
+    const totalReviews = parseInt(result?.totalCount || '0', 10);
+
+    await Project.update(
+        {
+            averageRating: Math.round(averageRating * 10) / 10,
+            totalReviews,
+        },
+        { where: { id: product.projectId } }
+    );
+}
+
 /**
  * Create a new review (requires confirmed transaction)
  * POST /reviews
@@ -142,6 +178,9 @@ export const createReview = async (req: Request, res: Response, next: NextFuncti
         // Recalculate product rating
         await recalculateProductRating(productId);
 
+        // Recalculate project rating (aggregate from all products)
+        await recalculateProjectRating(productId);
+
         res.status(201).json({
             success: true,
             data: fullReview,
@@ -227,7 +266,7 @@ export const getMyReviews = async (req: Request, res: Response, next: NextFuncti
         const { count, rows } = await Review.findAndCountAll({
             where: { userId },
             include: [
-                { model: Product, as: 'product', attributes: ['id', 'name', 'price'] },
+                { model: Product, as: 'product', attributes: ['id', 'name', 'basePrice'] },
             ],
             order: [['createdAt', 'DESC']],
             limit: Number(limit),
@@ -345,6 +384,193 @@ export const deleteReview = async (req: Request, res: Response, next: NextFuncti
         res.json({
             success: true,
             message: 'Review deleted successfully',
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Reply to a review (only by product/project owner, once only)
+ * POST /reviews/:id/reply
+ */
+export const replyToReview = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user!.id;
+        const { id } = req.params;
+        const { reply } = req.body;
+
+        if (!reply || !reply.trim()) {
+            return res.status(400).json({
+                success: false,
+                error: { code: 'MISSING_FIELDS', message: 'Reply content is required' },
+            });
+        }
+
+        const review = await Review.findByPk(id, {
+            include: [
+                {
+                    model: Product,
+                    as: 'product',
+                    include: [{ model: Project, as: 'project', attributes: ['id', 'ownerId'] }],
+                },
+            ],
+        });
+
+        if (!review) {
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Review not found' },
+            });
+        }
+
+        // Check that current user is the project owner
+        const projectOwnerId = (review as any).product?.project?.ownerId;
+        if (projectOwnerId !== userId) {
+            return res.status(403).json({
+                success: false,
+                error: { code: 'FORBIDDEN', message: 'Only the project owner can reply to reviews' },
+            });
+        }
+
+        // Check if already replied
+        if (review.ownerReply) {
+            return res.status(400).json({
+                success: false,
+                error: { code: 'ALREADY_REPLIED', message: 'You have already replied to this review' },
+            });
+        }
+
+        review.ownerReply = reply.trim();
+        review.ownerReplyAt = new Date();
+        await review.save();
+
+        const fullReview = await Review.findByPk(review.id, {
+            include: [
+                { model: User, as: 'user', attributes: ['id', 'fullName', 'avatarUrl'] },
+                { model: Product, as: 'product', attributes: ['id', 'name'] },
+            ],
+        });
+
+        res.json({
+            success: true,
+            data: fullReview,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Update owner reply to a review
+ * PUT /reviews/:id/reply
+ */
+export const updateReply = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user!.id;
+        const { id } = req.params;
+        const { reply } = req.body;
+
+        if (!reply || !reply.trim()) {
+            return res.status(400).json({
+                success: false,
+                error: { code: 'MISSING_FIELDS', message: 'Reply content is required' },
+            });
+        }
+
+        const review = await Review.findByPk(id, {
+            include: [
+                {
+                    model: Product,
+                    as: 'product',
+                    include: [{ model: Project, as: 'project', attributes: ['id', 'ownerId'] }],
+                },
+            ],
+        });
+
+        if (!review) {
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Review not found' },
+            });
+        }
+
+        const projectOwnerId = (review as any).product?.project?.ownerId;
+        if (projectOwnerId !== userId) {
+            return res.status(403).json({
+                success: false,
+                error: { code: 'FORBIDDEN', message: 'Only the project owner can edit replies' },
+            });
+        }
+
+        if (!review.ownerReply) {
+            return res.status(400).json({
+                success: false,
+                error: { code: 'NO_REPLY', message: 'No reply exists to update' },
+            });
+        }
+
+        review.ownerReply = reply.trim();
+        review.ownerReplyAt = new Date();
+        await review.save();
+
+        const fullReview = await Review.findByPk(review.id, {
+            include: [
+                { model: User, as: 'user', attributes: ['id', 'fullName', 'avatarUrl'] },
+                { model: Product, as: 'product', attributes: ['id', 'name'] },
+            ],
+        });
+
+        res.json({
+            success: true,
+            data: fullReview,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Delete owner reply from a review
+ * DELETE /reviews/:id/reply
+ */
+export const deleteReply = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user!.id;
+        const { id } = req.params;
+
+        const review = await Review.findByPk(id, {
+            include: [
+                {
+                    model: Product,
+                    as: 'product',
+                    include: [{ model: Project, as: 'project', attributes: ['id', 'ownerId'] }],
+                },
+            ],
+        });
+
+        if (!review) {
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Review not found' },
+            });
+        }
+
+        const projectOwnerId = (review as any).product?.project?.ownerId;
+        if (projectOwnerId !== userId) {
+            return res.status(403).json({
+                success: false,
+                error: { code: 'FORBIDDEN', message: 'Only the project owner can delete replies' },
+            });
+        }
+
+        review.ownerReply = null as any;
+        review.ownerReplyAt = null as any;
+        await review.save();
+
+        res.json({
+            success: true,
+            message: 'Reply deleted successfully',
         });
     } catch (error) {
         next(error);

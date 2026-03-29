@@ -46,6 +46,7 @@ class User extends Equatable {
   final String language;
   final bool isActive;
   final bool isBanned;
+  final bool isVerified;
   final String? banReason;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -66,6 +67,7 @@ class User extends Equatable {
     required this.language,
     required this.isActive,
     required this.isBanned,
+    this.isVerified = false,
     this.banReason,
     required this.createdAt,
     required this.updatedAt,
@@ -95,6 +97,7 @@ class User extends Equatable {
       language: json['language'] as String? ?? 'ar',
       isActive: json['isActive'] as bool? ?? true,
       isBanned: json['isBanned'] as bool? ?? false,
+      isVerified: json['isVerified'] as bool? ?? false,
       banReason: json['banReason'] as String?,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
@@ -123,6 +126,7 @@ class User extends Equatable {
       'language': language,
       'isActive': isActive,
       'isBanned': isBanned,
+      'isVerified': isVerified,
       'banReason': banReason,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
@@ -146,6 +150,7 @@ class User extends Equatable {
     String? language,
     bool? isActive,
     bool? isBanned,
+    bool? isVerified,
     String? banReason,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -167,6 +172,7 @@ class User extends Equatable {
       language: language ?? this.language,
       isActive: isActive ?? this.isActive,
       isBanned: isBanned ?? this.isBanned,
+      isVerified: isVerified ?? this.isVerified,
       banReason: banReason ?? this.banReason,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -213,6 +219,7 @@ class User extends Equatable {
         language,
         isActive,
         isBanned,
+        isVerified,
         banReason,
         createdAt,
         updatedAt,

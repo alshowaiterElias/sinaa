@@ -56,8 +56,8 @@ export const commonValidations = {
   // Phone validation (optional, Saudi format)
   phone: body('phone')
     .optional({ nullable: true })
-    .matches(/^(\+966|05)\d{8,9}$/)
-    .withMessage('Please provide a valid Saudi phone number'),
+    .matches(/^7\d{8}$/)
+    .withMessage('Please provide a valid Yemeni phone number'),
 
   // Language validation
   language: body('language')
@@ -143,8 +143,8 @@ export const authValidations = {
       .withMessage('Full name must be between 2 and 100 characters'),
     body('phone')
       .optional({ nullable: true })
-      .matches(/^(\+966|05)\d{8,9}$/)
-      .withMessage('Please provide a valid Saudi phone number'),
+      .matches(/^7\d{8}$/)
+      .withMessage('Please provide a valid Yemeni phone number'),
     commonValidations.language,
     body('notificationsEnabled')
       .optional()

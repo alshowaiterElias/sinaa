@@ -114,8 +114,11 @@ class Review {
   final int transactionId;
   final int rating;
   final String? comment;
+  final String? ownerReply;
+  final DateTime? ownerReplyAt;
   final ReviewStatus status;
   final DateTime createdAt;
+  final DateTime? updatedAt;
   final ReviewUser? user;
   final ReviewProduct? product;
 
@@ -126,8 +129,11 @@ class Review {
     required this.transactionId,
     required this.rating,
     this.comment,
+    this.ownerReply,
+    this.ownerReplyAt,
     required this.status,
     required this.createdAt,
+    this.updatedAt,
     this.user,
     this.product,
   });
@@ -140,8 +146,19 @@ class Review {
       transactionId: json['transactionId'] ?? json['transaction_id'] as int,
       rating: json['rating'] as int,
       comment: json['comment'],
+      ownerReply: json['ownerReply'] ?? json['owner_reply'],
+      ownerReplyAt: json['ownerReplyAt'] != null
+          ? DateTime.parse(json['ownerReplyAt'])
+          : json['owner_reply_at'] != null
+              ? DateTime.parse(json['owner_reply_at'])
+              : null,
       status: ReviewStatus.fromString(json['status']),
       createdAt: DateTime.parse(json['createdAt'] ?? json['created_at']),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : json['updated_at'] != null
+              ? DateTime.parse(json['updated_at'])
+              : null,
       user: json['user'] != null ? ReviewUser.fromJson(json['user']) : null,
       product: json['product'] != null
           ? ReviewProduct.fromJson(json['product'])

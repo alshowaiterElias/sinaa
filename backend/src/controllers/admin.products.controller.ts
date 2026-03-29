@@ -235,7 +235,7 @@ export const approveProduct = async (req: Request, res: Response) => {
             NotificationTemplates.productApproved(
                 product.project.ownerId,
                 product.id,
-                product.name
+                product.name || product.nameAr
             );
         }
 
@@ -256,7 +256,7 @@ export const approveProduct = async (req: Request, res: Response) => {
                         NotificationTemplates.newProductFromFavorite(
                             favorite.userId,
                             product.id,
-                            product.name,
+                            product.name || product.nameAr,
                             projectName,
                             product.projectId,
                             product.quantity
@@ -306,7 +306,7 @@ export const rejectProduct = async (req: Request, res: Response) => {
             NotificationTemplates.productRejected(
                 product.project.ownerId,
                 product.id,
-                product.name,
+                product.name || product.nameAr,
                 reason.trim()
             );
         }
@@ -349,7 +349,7 @@ export const disableProduct = async (req: Request, res: Response) => {
             NotificationTemplates.productDisabled(
                 product.project.ownerId,
                 product.id,
-                product.name,
+                product.name || product.nameAr,
                 reason.trim()
             );
         }
@@ -386,7 +386,7 @@ export const enableProduct = async (req: Request, res: Response) => {
             NotificationTemplates.productEnabled(
                 product.project.ownerId,
                 product.id,
-                product.name
+                product.name || product.nameAr
             );
         }
 
@@ -394,6 +394,32 @@ export const enableProduct = async (req: Request, res: Response) => {
     } catch (error: any) {
         console.error('Error enabling product:', error);
         return sendError(res, 'SERVER_ERROR', 'Error enabling product', 500, error);
+    }
+};
+
+/**
+ * Toggle featured status of a product
+ */
+export const toggleFeatured = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+
+        const product = await Product.findByPk(id);
+        if (!product) {
+            return sendNotFound(res, 'Product');
+        }
+
+        await product.update({
+            isFeatured: !product.isFeatured,
+        });
+
+        await product.reload({ include: productDetailInclude });
+        await attachOwnerToProduct(product);
+
+        return sendSuccess(res, product, product.isFeatured ? 'Product featured' : 'Product unfeatured');
+    } catch (error: any) {
+        console.error('Error toggling featured:', error);
+        return sendError(res, 'SERVER_ERROR', 'Error toggling featured', 500, error);
     }
 };
 

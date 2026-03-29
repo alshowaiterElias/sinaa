@@ -226,7 +226,7 @@ class _VariantsEditorWidgetState extends State<VariantsEditorWidget> {
               Expanded(
                 child: _buildTextField(
                   initialValue: (variant['priceModifier'] ?? 0).toString(),
-                  label: isRtl ? 'فرق السعر (SAR)' : 'Price +/- (SAR)',
+                  label: isRtl ? 'فرق السعر (YER)' : 'Price +/- (YER)',
                   hint: '0',
                   icon: Icons.add_circle_outline,
                   keyboardType: TextInputType.numberWithOptions(

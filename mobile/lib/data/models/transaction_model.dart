@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Transaction status enum
 enum TransactionStatus {
+  all,
   pending,
   confirmed,
   disputed,
@@ -24,6 +25,8 @@ enum TransactionStatus {
 
   String get value {
     switch (this) {
+      case TransactionStatus.all:
+        return 'all';
       case TransactionStatus.pending:
         return 'pending';
       case TransactionStatus.confirmed:
@@ -37,6 +40,8 @@ enum TransactionStatus {
 
   String get label {
     switch (this) {
+      case TransactionStatus.all:
+        return 'All';
       case TransactionStatus.pending:
         return 'Pending';
       case TransactionStatus.confirmed:
@@ -50,6 +55,8 @@ enum TransactionStatus {
 
   String get labelAr {
     switch (this) {
+      case TransactionStatus.all:
+        return 'الكل';
       case TransactionStatus.pending:
         return 'قيد الانتظار';
       case TransactionStatus.confirmed:
@@ -63,6 +70,8 @@ enum TransactionStatus {
 
   Color get color {
     switch (this) {
+      case TransactionStatus.all:
+        return Colors.grey;
       case TransactionStatus.pending:
         return Colors.orange;
       case TransactionStatus.confirmed:

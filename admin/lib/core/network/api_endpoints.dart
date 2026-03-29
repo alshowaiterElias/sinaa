@@ -21,6 +21,7 @@ class ApiEndpoints {
   static const String users = '/admin/users';
   static String user(int id) => '/admin/users/$id';
   static String userBan(int id) => '/admin/users/$id/ban';
+  static const String createUser = '/admin/users';
 
   // Projects management
   static const String projects = '/admin/projects';
@@ -37,6 +38,7 @@ class ApiEndpoints {
   static String productReject(int id) => '/admin/products/$id/reject';
   static String productDisable(int id) => '/admin/products/$id/disable';
   static String productEnable(int id) => '/admin/products/$id/enable';
+  static String productFeatured(int id) => '/admin/products/$id/featured';
 
   // Categories management
   static const String categories = '/admin/categories';

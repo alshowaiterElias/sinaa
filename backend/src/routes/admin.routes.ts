@@ -13,7 +13,7 @@ import {
 import { getDashboardStats } from '../controllers/admin.controller';
 import { validate, categoryValidations } from '../middleware/validate';
 import { authenticate, adminOnly } from '../middleware/auth';
-import { getUsers, toggleUserBan } from '../controllers/admin.users.controller';
+import { getUsers, toggleUserBan, createAdmin } from '../controllers/admin.users.controller';
 
 const router = Router();
 
@@ -37,6 +37,13 @@ router.get('/stats/dashboard', getDashboardStats);
  * @access  Admin
  */
 router.get('/users', getUsers);
+
+/**
+ * @route   POST /admin/users
+ * @desc    Create a new admin account
+ * @access  Admin
+ */
+router.post('/users', createAdmin);
 
 /**
  * @route   PUT /admin/users/:id/ban

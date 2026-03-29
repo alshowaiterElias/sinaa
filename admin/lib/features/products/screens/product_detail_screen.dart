@@ -120,8 +120,11 @@ class ProductDetailScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Center(
-                  child: Icon(Icons.image_not_supported,
-                      size: 48, color: AdminColors.textTertiary),
+                  child: Icon(
+                    Icons.image_not_supported,
+                    size: 48,
+                    color: AdminColors.textTertiary,
+                  ),
                 ),
               )
             else
@@ -163,7 +166,9 @@ class ProductDetailScreen extends ConsumerWidget {
                               right: 4,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 2),
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: AdminColors.primary,
                                   borderRadius: BorderRadius.circular(4),
@@ -171,7 +176,9 @@ class ProductDetailScreen extends ConsumerWidget {
                                 child: const Text(
                                   'رئيسية',
                                   style: TextStyle(
-                                      color: Colors.white, fontSize: 10),
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                  ),
                                 ),
                               ),
                             ),
@@ -196,57 +203,66 @@ class ProductDetailScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('المتغيرات (${product.variants.length})',
-                style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'المتغيرات (${product.variants.length})',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 16),
-            ...product.variants.map((variant) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(variant.nameAr,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600)),
-                            Text(variant.name,
-                                style: Theme.of(context).textTheme.bodySmall),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        '${variant.priceModifier >= 0 ? '+' : ''}${variant.priceModifier.toStringAsFixed(2)} ر.س',
-                        style: TextStyle(
-                          color: variant.priceModifier >= 0
-                              ? AdminColors.success
-                              : AdminColors.error,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: variant.isAvailable
-                              ? AdminColors.approvedBg
-                              : AdminColors.rejectedBg,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'الكمية: ${variant.quantity}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: variant.isAvailable
-                                ? AdminColors.approvedText
-                                : AdminColors.rejectedText,
+            ...product.variants.map(
+              (variant) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            variant.nameAr,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
+                          Text(
+                            variant.name,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      '${variant.priceModifier >= 0 ? '+' : ''}${variant.priceModifier.toStringAsFixed(2)} ر.ي',
+                      style: TextStyle(
+                        color: variant.priceModifier >= 0
+                            ? AdminColors.success
+                            : AdminColors.error,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: variant.isAvailable
+                            ? AdminColors.approvedBg
+                            : AdminColors.rejectedBg,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'الكمية: ${variant.quantity}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: variant.isAvailable
+                              ? AdminColors.approvedText
+                              : AdminColors.rejectedText,
                         ),
                       ),
-                    ],
-                  ),
-                )),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -266,13 +282,15 @@ class ProductDetailScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(product.nameAr,
-                          style: Theme.of(context).textTheme.headlineSmall),
+                      Text(
+                        product.nameAr,
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
                       Text(
                         product.name,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AdminColors.textSecondary,
-                            ),
+                          color: AdminColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -284,11 +302,11 @@ class ProductDetailScreen extends ConsumerWidget {
             Row(
               children: [
                 Text(
-                  '${product.basePrice.toStringAsFixed(2)} ر.س',
+                  '${product.basePrice.toStringAsFixed(2)} ر.ي',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: AdminColors.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    color: AdminColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const Spacer(),
                 Row(
@@ -296,15 +314,20 @@ class ProductDetailScreen extends ConsumerWidget {
                     const Icon(Icons.star, color: Colors.amber, size: 20),
                     const SizedBox(width: 4),
                     Text('${product.averageRating.toStringAsFixed(1)}'),
-                    Text(' (${product.totalReviews} تقييم)',
-                        style: Theme.of(context).textTheme.bodySmall),
+                    Text(
+                      ' (${product.totalReviews} تقييم)',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ],
                 ),
                 const SizedBox(width: 16),
                 Row(
                   children: [
-                    const Icon(Icons.visibility,
-                        size: 20, color: AdminColors.textSecondary),
+                    const Icon(
+                      Icons.visibility,
+                      size: 20,
+                      color: AdminColors.textSecondary,
+                    ),
                     const SizedBox(width: 4),
                     Text('${product.viewCount}'),
                   ],
@@ -406,18 +429,19 @@ class ProductDetailScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             if (product.descriptionAr != null &&
                 product.descriptionAr!.isNotEmpty) ...[
-              Text(product.descriptionAr!,
-                  style: Theme.of(context).textTheme.bodyMedium),
+              Text(
+                product.descriptionAr!,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
               const SizedBox(height: 8),
             ],
             if (product.description != null &&
                 product.description!.isNotEmpty) ...[
               Text(
                 product.description!,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: AdminColors.textSecondary),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AdminColors.textSecondary,
+                ),
               ),
             ],
             if ((product.description == null || product.description!.isEmpty) &&
@@ -426,18 +450,22 @@ class ProductDetailScreen extends ConsumerWidget {
               Text(
                 'لا يوجد وصف',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AdminColors.textTertiary,
-                      fontStyle: FontStyle.italic,
-                    ),
+                  color: AdminColors.textTertiary,
+                  fontStyle: FontStyle.italic,
+                ),
               ),
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 16),
             _buildDetailRow('الكمية المتوفرة', '${product.quantity}'),
-            _buildDetailRow('متوفر',
-                product.isAvailable && !product.isDisabled ? 'نعم' : 'لا'),
-            _buildDetailRow('تاريخ الإنشاء',
-                '${product.createdAt.day}/${product.createdAt.month}/${product.createdAt.year}'),
+            _buildDetailRow(
+              'متوفر',
+              product.isAvailable && !product.isDisabled ? 'نعم' : 'لا',
+            ),
+            _buildDetailRow(
+              'تاريخ الإنشاء',
+              '${product.createdAt.day}/${product.createdAt.month}/${product.createdAt.year}',
+            ),
           ],
         ),
       ),
@@ -485,10 +513,14 @@ class ProductDetailScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(project.nameAr,
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
-                      Text(project.city,
-                          style: Theme.of(context).textTheme.bodySmall),
+                      Text(
+                        project.nameAr,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        project.city,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                     ],
                   ),
                 ),
@@ -496,10 +528,14 @@ class ProductDetailScreen extends ConsumerWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(project.owner!.name,
-                          style: const TextStyle(fontWeight: FontWeight.w500)),
-                      Text(project.owner!.email,
-                          style: Theme.of(context).textTheme.bodySmall),
+                      Text(
+                        project.owner!.name,
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      Text(
+                        project.owner!.email,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                     ],
                   ),
                 ],
@@ -526,10 +562,12 @@ class ProductDetailScreen extends ConsumerWidget {
               spacing: 8,
               runSpacing: 8,
               children: product.tags
-                  .map((tag) => Chip(
-                        label: Text(tag.nameAr),
-                        backgroundColor: AdminColors.surfaceVariant,
-                      ))
+                  .map(
+                    (tag) => Chip(
+                      label: Text(tag.nameAr),
+                      backgroundColor: AdminColors.surfaceVariant,
+                    ),
+                  )
                   .toList(),
             ),
           ],
@@ -539,7 +577,10 @@ class ProductDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildActionsSection(
-      BuildContext context, WidgetRef ref, Product product) {
+    BuildContext context,
+    WidgetRef ref,
+    Product product,
+  ) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -556,7 +597,8 @@ class ProductDetailScreen extends ConsumerWidget {
                       icon: const Icon(Icons.check),
                       label: const Text('اعتماد'),
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: AdminColors.success),
+                        backgroundColor: AdminColors.success,
+                      ),
                       onPressed: () => _approveProduct(context, ref, product),
                     ),
                   ),
@@ -568,7 +610,8 @@ class ProductDetailScreen extends ConsumerWidget {
                       icon: const Icon(Icons.close),
                       label: const Text('رفض'),
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: AdminColors.error),
+                        backgroundColor: AdminColors.error,
+                      ),
                       onPressed: () => _rejectProduct(context, ref, product),
                     ),
                   ),
@@ -579,7 +622,8 @@ class ProductDetailScreen extends ConsumerWidget {
                       icon: const Icon(Icons.block),
                       label: const Text('تعطيل'),
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: AdminColors.warning),
+                        backgroundColor: AdminColors.warning,
+                      ),
                       onPressed: () => _disableProduct(context, ref, product),
                     ),
                   ),
@@ -589,7 +633,8 @@ class ProductDetailScreen extends ConsumerWidget {
                       icon: const Icon(Icons.check),
                       label: const Text('تفعيل'),
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: AdminColors.success),
+                        backgroundColor: AdminColors.success,
+                      ),
                       onPressed: () => _enableProduct(context, ref, product),
                     ),
                   ),
@@ -602,7 +647,10 @@ class ProductDetailScreen extends ConsumerWidget {
   }
 
   Future<void> _approveProduct(
-      BuildContext context, WidgetRef ref, Product product) async {
+    BuildContext context,
+    WidgetRef ref,
+    Product product,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -610,11 +658,13 @@ class ProductDetailScreen extends ConsumerWidget {
         content: Text('هل تريد اعتماد منتج "${product.nameAr}"؟'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('إلغاء')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('إلغاء'),
+          ),
           ElevatedButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('اعتماد')),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('اعتماد'),
+          ),
         ],
       ),
     );
@@ -626,17 +676,22 @@ class ProductDetailScreen extends ConsumerWidget {
       if (success) {
         ref.invalidate(productDetailProvider(productId));
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('تم اعتماد المنتج بنجاح'),
-            backgroundColor: AdminColors.success,
-          ));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('تم اعتماد المنتج بنجاح'),
+              backgroundColor: AdminColors.success,
+            ),
+          );
         }
       }
     }
   }
 
   Future<void> _rejectProduct(
-      BuildContext context, WidgetRef ref, Product product) async {
+    BuildContext context,
+    WidgetRef ref,
+    Product product,
+  ) async {
     final reason = await showDialog<String>(
       context: context,
       builder: (ctx) =>
@@ -650,17 +705,22 @@ class ProductDetailScreen extends ConsumerWidget {
       if (success) {
         ref.invalidate(productDetailProvider(productId));
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('تم رفض المنتج'),
-            backgroundColor: AdminColors.error,
-          ));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('تم رفض المنتج'),
+              backgroundColor: AdminColors.error,
+            ),
+          );
         }
       }
     }
   }
 
   Future<void> _disableProduct(
-      BuildContext context, WidgetRef ref, Product product) async {
+    BuildContext context,
+    WidgetRef ref,
+    Product product,
+  ) async {
     final reason = await showDialog<String>(
       context: context,
       builder: (ctx) => RejectDialog(
@@ -678,26 +738,34 @@ class ProductDetailScreen extends ConsumerWidget {
       if (success) {
         ref.invalidate(productDetailProvider(productId));
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('تم تعطيل المنتج'),
-            backgroundColor: AdminColors.warning,
-          ));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('تم تعطيل المنتج'),
+              backgroundColor: AdminColors.warning,
+            ),
+          );
         }
       }
     }
   }
 
   Future<void> _enableProduct(
-      BuildContext context, WidgetRef ref, Product product) async {
-    final success =
-        await ref.read(productsListProvider.notifier).enableProduct(product.id);
+    BuildContext context,
+    WidgetRef ref,
+    Product product,
+  ) async {
+    final success = await ref
+        .read(productsListProvider.notifier)
+        .enableProduct(product.id);
     if (success) {
       ref.invalidate(productDetailProvider(productId));
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('تم تفعيل المنتج'),
-          backgroundColor: AdminColors.success,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم تفعيل المنتج'),
+            backgroundColor: AdminColors.success,
+          ),
+        );
       }
     }
   }

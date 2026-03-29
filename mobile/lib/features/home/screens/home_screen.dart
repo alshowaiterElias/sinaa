@@ -748,7 +748,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       const Spacer(),
                       Text(
-                        '${product.basePrice.toStringAsFixed(0)} ${isRtl ? 'ر.س' : 'SAR'}',
+                        '${product.basePrice.toStringAsFixed(0)} ${isRtl ? 'ر.ي' : 'YER'}',
                         style:
                             Theme.of(context).textTheme.titleMedium?.copyWith(
                                   color: AppColors.primary,

@@ -122,10 +122,14 @@ class _ProjectOwnerRegisterScreenState
             email: _emailController.text.trim(),
             password: _passwordController.text,
             fullName: _fullNameController.text.trim(),
-            projectName: _projectNameController.text.trim(),
+            projectName: _projectNameController.text.trim().isNotEmpty
+                ? _projectNameController.text.trim()
+                : _projectNameArController.text.trim(),
             projectNameAr: _projectNameArController.text.trim(),
             city: _selectedCity,
-            description: _descriptionController.text.trim(),
+            description: _descriptionController.text.trim().isNotEmpty
+                ? _descriptionController.text.trim()
+                : _descriptionArController.text.trim(),
             descriptionAr: _descriptionArController.text.trim(),
             latitude: _latitude,
             longitude: _longitude,
@@ -142,7 +146,8 @@ class _ProjectOwnerRegisterScreenState
           );
 
       if (mounted) {
-        context.go(Routes.home);
+        context.go(Routes.verificationWaiting,
+            extra: _emailController.text.trim());
       }
     } catch (e) {
       if (mounted) {
@@ -327,19 +332,7 @@ class _ProjectOwnerRegisterScreenState
 
                             const SizedBox(height: 20),
 
-                            // Project info
-                            CustomTextField(
-                              controller: _projectNameController,
-                              label: l10n.tr('auth.projectName'),
-                              hint: 'My Family Project',
-                              textCapitalization: TextCapitalization.words,
-                              prefixIcon: Icons.storefront_rounded,
-                              validator: (value) =>
-                                  Validators.projectName(value),
-                            ),
-
-                            const SizedBox(height: 20),
-
+                            // Project info - Arabic (required)
                             CustomTextField(
                               controller: _projectNameArController,
                               label: l10n.tr('auth.projectNameAr'),
@@ -351,21 +344,35 @@ class _ProjectOwnerRegisterScreenState
 
                             const SizedBox(height: 20),
 
-                            // Description
+                            // Project info - English (optional)
                             CustomTextField(
-                              controller: _descriptionController,
-                              label: l10n.tr('project.descriptionEn'),
-                              hint: 'Describe your project...',
+                              controller: _projectNameController,
+                              label:
+                                  '${l10n.tr('auth.projectName')} (${l10n.tr('common.optional')})',
+                              hint: 'My Family Project',
+                              textCapitalization: TextCapitalization.words,
+                              prefixIcon: Icons.storefront_rounded,
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Description - Arabic (optional but recommended)
+                            CustomTextField(
+                              controller: _descriptionArController,
+                              label: l10n.tr('project.descriptionAr'),
+                              hint: 'وصف مشروعك...',
                               maxLines: 3,
                               prefixIcon: Icons.description_outlined,
                             ),
 
                             const SizedBox(height: 20),
 
+                            // Description - English (optional)
                             CustomTextField(
-                              controller: _descriptionArController,
-                              label: l10n.tr('project.descriptionAr'),
-                              hint: 'وصف مشروعك...',
+                              controller: _descriptionController,
+                              label:
+                                  '${l10n.tr('project.descriptionEn')} (${l10n.tr('common.optional')})',
+                              hint: 'Describe your project...',
                               maxLines: 3,
                               prefixIcon: Icons.description_outlined,
                             ),
@@ -457,8 +464,7 @@ class _ProjectOwnerRegisterScreenState
                             // Next button
                             LoadingButton(
                               onPressed: () {
-                                if (_projectNameController.text.isEmpty ||
-                                    _projectNameArController.text.isEmpty ||
+                                if (_projectNameArController.text.isEmpty ||
                                     _selectedCity.isEmpty) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
@@ -508,7 +514,7 @@ class _ProjectOwnerRegisterScreenState
                             CustomTextField(
                               controller: _phoneController,
                               label: l10n.tr('auth.phone'),
-                              hint: '05xxxxxxxx',
+                              hint: '7xxxxxxxx',
                               keyboardType: TextInputType.phone,
                               prefixIcon: Icons.phone_outlined,
                               validator: (value) =>

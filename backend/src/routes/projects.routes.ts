@@ -6,6 +6,7 @@ import {
     getMyProject,
     createProject,
     updateProject,
+    getProjectCities,
 } from '../controllers/projectController';
 import { authenticate, projectOwnerOnly, optionalAuth } from '../middleware/auth';
 import { validate, projectValidations, commonValidations } from '../middleware/validate';
@@ -26,6 +27,13 @@ router.get(
     validate([commonValidations.page, commonValidations.limit]),
     getProjects
 );
+
+/**
+ * @route   GET /projects/cities
+ * @desc    Get distinct cities from approved projects
+ * @access  Public
+ */
+router.get('/cities', getProjectCities);
 
 // ==================== Protected Routes ====================
 

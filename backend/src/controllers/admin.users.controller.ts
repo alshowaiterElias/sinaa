@@ -86,3 +86,49 @@ export const toggleUserBan = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Failed to update user status' });
     }
 };
+
+/**
+ * Create a new admin account
+ */
+export const createAdmin = async (req: Request, res: Response) => {
+    try {
+        const { email, password, fullName } = req.body;
+
+        if (!email || !password || !fullName) {
+            return res.status(400).json({ message: 'Email, password and full name are required' });
+        }
+
+        // Check if email already exists
+        const existingUser = await User.findOne({ where: { email } });
+        if (existingUser) {
+            return res.status(409).json({ message: 'Email already registered' });
+        }
+
+        // Hash password
+        const { hashPassword } = await import('../utils/password');
+        const passwordHash = await hashPassword(password);
+
+        // Create admin user (pre-verified)
+        const user = await User.create({
+            email,
+            passwordHash,
+            fullName,
+            role: 'admin' as any,
+            isVerified: true,
+            isActive: true,
+        });
+
+        res.status(201).json({
+            message: 'Admin account created successfully',
+            user: {
+                id: user.id,
+                email: user.email,
+                fullName: user.fullName,
+                role: user.role,
+            },
+        });
+    } catch (error) {
+        console.error('Create admin error:', error);
+        res.status(500).json({ message: 'Failed to create admin account' });
+    }
+};

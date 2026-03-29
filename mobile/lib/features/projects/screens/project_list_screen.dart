@@ -8,6 +8,7 @@ import '../../../core/network/api_endpoints.dart';
 import '../../../data/models/project_model.dart';
 import '../../../data/repositories/project_repository.dart';
 import '../../../data/providers/auth_provider.dart';
+import '../../../data/providers/projects_provider.dart';
 import '../../../shared/widgets/custom_text_field.dart';
 import '../../../config/routes.dart';
 
@@ -42,19 +43,8 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
   double? _searchRadius;
   String? _city;
 
-  // Cities list (mock for now, ideally fetched from API or constants)
-  final List<String> _cities = [
-    'Riyadh',
-    'Jeddah',
-    'Dammam',
-    'Mecca',
-    'Medina',
-    'Khobar',
-    'Tabuk',
-    'Abha',
-    'Taif',
-    'Buraidah',
-  ];
+  // View mode: 'all' or 'nearby'
+  String _viewMode = 'all';
 
   @override
   void initState() {
@@ -90,11 +80,13 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
       final repository = ref.read(projectsRepositoryProvider);
       final user = ref.read(currentUserProvider);
 
-      // Use user location if available for distance sorting/filtering
+      // Only send location params when in 'nearby' mode
       double? lat;
       double? lon;
 
-      if (user?.latitude != null && user?.longitude != null) {
+      if (_viewMode == 'nearby' &&
+          user?.latitude != null &&
+          user?.longitude != null) {
         lat = user!.latitude;
         lon = user.longitude;
       }
@@ -103,10 +95,10 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
         page: 1,
         limit: 20,
         search: _searchQuery.isEmpty ? null : _searchQuery,
-        sortBy: _sortBy,
+        sortBy: _viewMode == 'nearby' ? 'distance' : _sortBy,
         minRating: _minRating,
         city: _city,
-        radius: _searchRadius,
+        radius: _viewMode == 'nearby' ? (_searchRadius ?? 50) : null,
         lat: lat,
         lon: lon,
       );
@@ -139,7 +131,9 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
       double? lat;
       double? lon;
 
-      if (user?.latitude != null && user?.longitude != null) {
+      if (_viewMode == 'nearby' &&
+          user?.latitude != null &&
+          user?.longitude != null) {
         lat = user!.latitude;
         lon = user.longitude;
       }
@@ -148,10 +142,10 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
         page: _currentPage,
         limit: 20,
         search: _searchQuery.isEmpty ? null : _searchQuery,
-        sortBy: _sortBy,
+        sortBy: _viewMode == 'nearby' ? 'distance' : _sortBy,
         minRating: _minRating,
         city: _city,
-        radius: _searchRadius,
+        radius: _viewMode == 'nearby' ? (_searchRadius ?? 50) : null,
         lat: lat,
         lon: lon,
       );
@@ -244,7 +238,7 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                 child: SearchTextField(
                   controller: _searchController,
-                  hint: l10n.tr('searchPlaceholder'),
+                  hint: l10n.tr('common.searchPlaceholder3'),
                   onChanged: (value) {
                     _searchQuery = value;
                   },
@@ -259,6 +253,105 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
                     });
                     _loadProjects();
                   },
+                ),
+              ),
+            ),
+          ),
+
+          // All/Nearby toggle
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.all(4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          if (_viewMode != 'all') {
+                            setState(() => _viewMode = 'all');
+                            _loadProjects();
+                          }
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: _viewMode == 'all'
+                                ? AppColors.primary
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Center(
+                            child: Text(
+                              l10n.tr('allProjects'),
+                              style: TextStyle(
+                                color: _viewMode == 'all'
+                                    ? Colors.white
+                                    : AppColors.textSecondary,
+                                fontWeight: _viewMode == 'all'
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          if (_viewMode != 'nearby') {
+                            setState(() => _viewMode = 'nearby');
+                            _loadProjects();
+                          }
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: _viewMode == 'nearby'
+                                ? AppColors.primary
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Center(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.near_me_rounded,
+                                  size: 16,
+                                  color: _viewMode == 'nearby'
+                                      ? Colors.white
+                                      : AppColors.textSecondary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  l10n.tr('nearbyProjects'),
+                                  style: TextStyle(
+                                    color: _viewMode == 'nearby'
+                                        ? Colors.white
+                                        : AppColors.textSecondary,
+                                    fontWeight: _viewMode == 'nearby'
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -526,7 +619,7 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setSheetState) => Container(
-          height: MediaQuery.of(context).size.height * 0.85,
+          height: MediaQuery.of(context).size.height * 0.5,
           decoration: const BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -560,9 +653,6 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
                     TextButton(
                       onPressed: () {
                         setSheetState(() {
-                          _sortBy = 'rating';
-                          _minRating = null;
-                          _searchRadius = null;
                           _city = null;
                         });
                       },
@@ -578,102 +668,7 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Sort By
-                      Text(
-                        l10n.tr('sortBy'),
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          _buildSortChip(
-                            context,
-                            l10n.tr('rating'),
-                            'rating',
-                            Icons.star_rounded,
-                            setSheetState,
-                          ),
-                          _buildSortChip(
-                            context,
-                            l10n.tr('location.sortByDistance'),
-                            'distance',
-                            Icons.near_me_rounded,
-                            setSheetState,
-                          ),
-                          _buildSortChip(
-                            context,
-                            l10n.tr('location.sortByNewest'),
-                            'newest',
-                            Icons.schedule_rounded,
-                            setSheetState,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Distance Range (Slider)
-                      Text(
-                        '${l10n.tr('location.distance')}: ${_searchRadius?.toInt() ?? 50} km',
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                      ),
-                      const SizedBox(height: 12),
-                      Slider(
-                        value: _searchRadius ?? 50,
-                        min: 1,
-                        max: 100,
-                        divisions: 100,
-                        label: '${_searchRadius?.toInt() ?? 50} km',
-                        onChanged: (value) {
-                          setSheetState(() {
-                            _searchRadius = value;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Rating
-                      Text(
-                        l10n.tr('rating'),
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                      ),
-                      const SizedBox(height: 12),
-                      Column(
-                        children: [4, 3, 2, 1].map((rating) {
-                          return RadioListTile<double>(
-                            value: rating.toDouble(),
-                            groupValue: _minRating,
-                            onChanged: (value) {
-                              setSheetState(() {
-                                _minRating = value;
-                              });
-                            },
-                            title: Row(
-                              children: [
-                                Text('$rating+ '),
-                                const Icon(Icons.star_rounded,
-                                    color: AppColors.warning, size: 16),
-                              ],
-                            ),
-                            activeColor: AppColors.primary,
-                            contentPadding: EdgeInsets.zero,
-                            dense: true,
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // City
+                      // City Filter (from DB)
                       Text(
                         l10n.tr('city'),
                         style:
@@ -682,36 +677,70 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
                                 ),
                       ),
                       const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: _cities.map((city) {
-                          final isSelected = _city == city;
-                          return FilterChip(
-                            label: Text(city),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              setSheetState(() {
-                                _city = selected ? city : null;
-                              });
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final citiesAsync = ref.watch(projectCitiesProvider);
+                          return citiesAsync.when(
+                            data: (cities) {
+                              return Autocomplete<String>(
+                                optionsBuilder: (textEditingValue) {
+                                  if (textEditingValue.text.isEmpty) {
+                                    return cities;
+                                  }
+                                  return cities.where((c) => c
+                                      .toLowerCase()
+                                      .contains(
+                                          textEditingValue.text.toLowerCase()));
+                                },
+                                initialValue:
+                                    TextEditingValue(text: _city ?? ''),
+                                onSelected: (selectedCity) {
+                                  setSheetState(() {
+                                    _city = selectedCity;
+                                  });
+                                },
+                                fieldViewBuilder: (context, controller,
+                                    focusNode, onSubmitted) {
+                                  return TextField(
+                                    controller: controller,
+                                    focusNode: focusNode,
+                                    decoration: InputDecoration(
+                                      hintText: context.isRtl
+                                          ? 'ابحث عن مدينة...'
+                                          : 'Search city...',
+                                      prefixIcon: const Icon(
+                                          Icons.location_city_rounded),
+                                      suffixIcon: _city != null
+                                          ? IconButton(
+                                              icon: const Icon(Icons.clear),
+                                              onPressed: () {
+                                                controller.clear();
+                                                setSheetState(() {
+                                                  _city = null;
+                                                });
+                                              },
+                                            )
+                                          : null,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      filled: true,
+                                      fillColor: AppColors.surfaceVariant,
+                                    ),
+                                  );
+                                },
+                              );
                             },
-                            backgroundColor: AppColors.surfaceVariant,
-                            selectedColor: AppColors.primary.withOpacity(0.2),
-                            labelStyle: TextStyle(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.textSecondary,
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
-                            side: BorderSide(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : Colors.transparent,
+                            loading: () => const Center(
+                                child: CircularProgressIndicator()),
+                            error: (e, _) => Text(
+                              context.isRtl
+                                  ? 'فشل تحميل المدن'
+                                  : 'Failed to load cities',
+                              style: const TextStyle(color: AppColors.error),
                             ),
                           );
-                        }).toList(),
+                        },
                       ),
                       const SizedBox(height: 40),
                     ],
@@ -735,52 +764,6 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSortChip(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon,
-    StateSetter setSheetState,
-  ) {
-    final isSelected = _sortBy == value;
-    return GestureDetector(
-      onTap: () {
-        setSheetState(() {
-          _sortBy = value;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.divider,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected ? Colors.white : AppColors.textSecondary,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : AppColors.textSecondary,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 13,
-              ),
-            ),
-          ],
         ),
       ),
     );

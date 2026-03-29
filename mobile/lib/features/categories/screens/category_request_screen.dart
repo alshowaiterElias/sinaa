@@ -78,7 +78,9 @@ class _CategoryRequestScreenState extends ConsumerState<CategoryRequestScreen>
 
     try {
       await ref.read(categoriesRepositoryProvider).requestCategory(
-            name: _nameController.text,
+            name: _nameController.text.isNotEmpty
+                ? _nameController.text
+                : _nameArController.text,
             nameAr: _nameArController.text,
             icon: _iconController.text.isNotEmpty ? _iconController.text : null,
             parentId: _selectedParent?.id,
@@ -171,21 +173,7 @@ class _CategoryRequestScreenState extends ConsumerState<CategoryRequestScreen>
               ),
             ),
             const SizedBox(height: 24),
-            TextFormField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: context.l10n.tr('categoryNameEn'),
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.language),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return context.l10n.tr('enterEnglishName');
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
+            // Arabic name (required)
             TextFormField(
               controller: _nameArController,
               decoration: InputDecoration(
@@ -199,6 +187,17 @@ class _CategoryRequestScreenState extends ConsumerState<CategoryRequestScreen>
                 }
                 return null;
               },
+            ),
+            const SizedBox(height: 16),
+            // English name (optional)
+            TextFormField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText:
+                    '${context.l10n.tr('categoryNameEn')} (${context.l10n.tr('common.optional')})',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.language),
+              ),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<Category>(

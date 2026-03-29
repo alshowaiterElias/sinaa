@@ -3,6 +3,7 @@ import { Op } from 'sequelize';
 import { Transaction, User, Conversation, Product, SupportTicket, SystemSetting, Notification } from '../models';
 import Project from '../models/Project';
 import Message from '../models/Message';
+import { NotificationTemplates } from '../services/notification.service';
 
 // Helper to calculate auto-confirm date
 async function getAutoConfirmDate(): Promise<Date> {
@@ -55,7 +56,8 @@ export const initiateTransaction = async (req: Request, res: Response, next: Nex
     try {
         const userId = req.user!.id;
         const { conversationId, productId } = req.body;
-
+        console.log("HELLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL");
+        console.log(productId);
         if (!conversationId) {
             return res.status(400).json({
                 success: false,
@@ -86,6 +88,7 @@ export const initiateTransaction = async (req: Request, res: Response, next: Nex
         if (productId) {
             const existingProductTransaction = await Transaction.findOne({
                 where: {
+                    conversationId,
                     productId,
                     status: ['pending', 'confirmed'],
                 },
@@ -401,6 +404,20 @@ export const confirmTransaction = async (req: Request, res: Response, next: Next
                 titleAr: 'تأكيد التقييم',
                 data: { transactionId: transaction.id },
             });
+        }
+
+        // If transaction is now confirmed (both parties agreed), notify the customer to write a review
+        if (transaction.status === 'confirmed' && transaction.productId) {
+            const product = await Product.findByPk(transaction.productId);
+            if (product) {
+                // The initiator is typically the customer who requested the rating
+                await NotificationTemplates.transactionAccepted(
+                    transaction.initiatedBy,
+                    transaction.id,
+                    product.id,
+                    product.name || 'Product',
+                );
+            }
         }
 
         // Fetch with associations

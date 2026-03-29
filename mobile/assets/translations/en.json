@@ -26,9 +26,19 @@
   "clearAll": "Clear All",
   "apply": "Apply",
   "reset": "Reset",
+  "loginForNotifications": "Login to Notifications",
+  "loginForNotificationsMessage": "Login to receive notifications about your orders and messages",
+  "clearAllNotifications": "Clear All Notifications",
+  "clearAllNotificationsConfirm": "Are you sure you want to clear all notifications?",
+  "addedToCart": "Added to Cart",
+  "noProductsFound": "No Products Found",
+  "noResultsFound": "No Results Found",
+  "priceHighToLow": "Price: High to Low",
+  "priceLowToHigh": "Price: Low to High",
   "auth": {
     "locationInfoMessage": "This is your personal location not your project location, used for your customer account",
     "login": "Login",
+    "pickYourLocation": "Pick Your Location",
     "register": "Register",
     "logout": "Logout",
     "save": "Save",
@@ -89,7 +99,16 @@
     "passwordChangedSuccess": "Password changed successfully. You can now login with your new password.",
     "locationSharing": "location sharing",
     "yourLocation": "your location",
-    "locationSharingHint": "This helps find nearby projects"
+    "locationSharingHint": "This helps find nearby projects",
+    "verifyYourEmail": "Verify Your Email",
+    "verificationCodeSentTo": "We have sent a verification code to",
+    "verificationCode": "Verification Code",
+    "enter6DigitCode": "Enter 6-digit code",
+    "verify": "Verify",
+    "resendEmail": "Resend Email",
+    "verificationEmailSent": "Verification email sent successfully",
+    "enterVerificationCode": "Please enter the verification code",
+    "emailVerifiedSuccess": "Email verified successfully"
   },
   "common": {
     "skip": "Skip",
@@ -104,6 +123,7 @@
     "more": "More",
     "cancel": "Cancel",
     "save": "Save",
+    "optional": "Optional",
     "delete": "Delete",
     "edit": "Edit",
     "done": "Done",
@@ -116,7 +136,10 @@
     "apply": "Apply",
     "reset": "Reset",
     "searchPlaceholder": "Search products or projects...",
-    "noProducts": "No products found"
+    "searchPlaceholder2": "Search products...",
+    "searchPlaceholder3": "Search projects...",
+    "noProducts": "No products found",
+    "products": "My products"
   },
   "categories": "Categories",
   "allCategories": "All Categories",
@@ -131,6 +154,7 @@
   "browseProducts": "Browse Products",
   "reloadCategories": "Reload Categories",
   "featuredProducts": "Featured Products",
+  "allProjects": "All Projects",
   "nearbyProjects": "Nearby Projects",
   "searchPlaceholder": "Search products or projects...",
   "recentSearches": "Recent Searches",
@@ -274,6 +298,7 @@
     "button": "Explore Now"
   },
   "project": {
+    "noProjectsFound": "No Projects Found",
     "noProjectTitle": "You don't have a project yet",
     "noProjectSubtitle": "Create your project now and start selling your products",
     "createProject": "Create Project",
@@ -303,7 +328,8 @@
     "selectedLocation": "Selected Location",
     "locationUpdated": "Location updated successfully",
     "closed": "Closed",
-    "pendingMessage": "Your project is currently under review by the administration. You will be notified once it is approved."
+    "pendingMessage": "Your project is currently under review by the administration. You will be notified once it is approved.",
+    "addCoverImage": "Add Cover Image"
   },
   "days": {
     "monday": "Monday",
@@ -402,5 +428,6 @@
     "title": "Notifications",
     "noNotifications": "You have no notifications",
     "noNotificationsMessage": "You haven't received any notifications yet"
-  }
+  },
+  "submitRequest": "Submit Request"
 }

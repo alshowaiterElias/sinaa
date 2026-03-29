@@ -104,54 +104,75 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   PreferredSizeWidget _buildAppBar(String title, ChatState state, bool isRtl) {
     final conversation = state.conversation;
     final avatarUrl = conversation?.project?.logoUrl;
+    final ownerName = conversation?.project?.owner?.fullName;
+    final projectId = conversation?.project?.id;
 
     return AppBar(
       titleSpacing: 0,
-      title: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: AppColors.surfaceVariant,
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: avatarUrl != null
-                ? Image.network(
-                    ApiEndpoints.imageUrl(avatarUrl),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        const Icon(Icons.store, color: AppColors.textTertiary),
-                  )
-                : const Icon(Icons.store, color: AppColors.textTertiary),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+      title: InkWell(
+        onTap: projectId != null
+            ? () => context.push('/project/$projectId')
+            : null,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.surfaceVariant,
                 ),
-                if (state.typingUsers.isNotEmpty)
-                  Text(
-                    context.l10n.tr('typing'),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.primary,
-                      fontStyle: FontStyle.italic,
+                clipBehavior: Clip.antiAlias,
+                child: avatarUrl != null
+                    ? Image.network(
+                        ApiEndpoints.imageUrl(avatarUrl),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.store, color: AppColors.textTertiary),
+                      )
+                    : const Icon(Icons.store, color: AppColors.textTertiary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-              ],
-            ),
+                    if (ownerName != null && ownerName.isNotEmpty)
+                      Text(
+                        ownerName,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.normal,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    else if (state.typingUsers.isNotEmpty)
+                      Text(
+                        context.l10n.tr('typing'),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.primary,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
       actions: [
         // Rating request button
@@ -159,26 +180,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           icon: const Icon(Icons.star_rate_outlined),
           tooltip: isRtl ? 'طلب تقييم' : 'Request Rating',
           onPressed: () => _showRatingRequestDialog(context, isRtl),
-        ),
-        PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert),
-          onSelected: (value) {
-            if (value == 'view_transactions') {
-              context.push(Routes.transactions);
-            }
-          },
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'view_transactions',
-              child: Row(
-                children: [
-                  const Icon(Icons.swap_horiz, size: 20),
-                  const SizedBox(width: 8),
-                  Text(isRtl ? 'طلبات التقييم' : 'Rating Requests'),
-                ],
-              ),
-            ),
-          ],
         ),
       ],
     );
@@ -244,7 +245,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             );
 
         return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (showDate) _buildDateSeparator(message.createdAt),
             MessageBubble(
@@ -402,6 +403,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               backgroundColor: Colors.green,
             ),
           );
+          // Refresh chat messages so system message appears immediately
+          ref.read(chatProvider(widget.conversationId).notifier).loadMessages();
         } else {
           // Get specific error from provider
           final error = ref.read(transactionsProvider).error;
@@ -460,7 +463,10 @@ class _ProductPickerSheetState extends ConsumerState<_ProductPickerSheet> {
   Future<void> _loadProducts() async {
     try {
       final repository = ref.read(projectsRepositoryProvider);
-      final response = await repository.getProjectProducts(widget.projectId);
+      final response = await repository.getProjectProducts(
+        widget.projectId,
+        status: 'approved',
+      );
       setState(() {
         _products = response.products;
         _isLoading = false;
@@ -544,7 +550,7 @@ class _ProductPickerSheetState extends ConsumerState<_ProductPickerSheet> {
                                     ? (product.nameAr ?? product.name)
                                     : product.name),
                                 subtitle: Text(
-                                    '${product.basePrice.toStringAsFixed(2)} SAR'),
+                                    '${product.basePrice.toStringAsFixed(2)} YER'),
                                 onTap: () =>
                                     widget.onProductSelected(product.id),
                               );
@@ -552,23 +558,6 @@ class _ProductPickerSheetState extends ConsumerState<_ProductPickerSheet> {
                           ),
           ),
           // Skip button
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: widget.onSkip,
-                  child: Text(
-                    widget.isRtl
-                        ? 'تقييم الخدمة بدون منتج'
-                        : 'Rate service without product',
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );

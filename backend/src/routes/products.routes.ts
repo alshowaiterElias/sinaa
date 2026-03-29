@@ -26,7 +26,7 @@ const router = Router();
 
 // Validation rules
 const productValidation = [
-    body('name').trim().notEmpty().withMessage('Name is required'),
+    // body('name').trim().notEmpty().withMessage('Name is required'),
     body('nameAr').trim().notEmpty().withMessage('Arabic name is required'),
     body('basePrice').isFloat({ min: 0 }).withMessage('Price must be positive'),
     body('categoryId').isInt().withMessage('Category ID must be an integer'),

@@ -11,14 +11,28 @@ class ProductReviewsSection extends ConsumerWidget {
   final int productId;
   final bool isRtl;
   final bool isOwner;
+  final int? currentUserId;
   final Function(Review)? onReportComment;
+  final Function(Review)? onReportReply;
+  final Function(Review)? onEditReview;
+  final Function(Review)? onDeleteReview;
+  final Function(Review)? onReplyReview;
+  final Function(Review)? onEditReply;
+  final Function(Review)? onDeleteReply;
 
   const ProductReviewsSection({
     super.key,
     required this.productId,
     required this.isRtl,
     this.isOwner = false,
+    this.currentUserId,
     this.onReportComment,
+    this.onReportReply,
+    this.onEditReview,
+    this.onDeleteReview,
+    this.onReplyReview,
+    this.onEditReply,
+    this.onDeleteReply,
   });
 
   @override
@@ -29,38 +43,28 @@ class ProductReviewsSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 24),
-        // Section Header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.reviews_rounded,
-                  color: AppColors.primary,
-                  size: 22,
-                ),
+                Icon(Icons.reviews_rounded, color: AppColors.primary, size: 22),
                 const SizedBox(width: 8),
                 Text(
                   isRtl ? 'التقييمات والمراجعات' : 'Reviews & Ratings',
                   style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
           ],
         ),
         const SizedBox(height: 16),
-
-        // Reviews Content
         reviewsAsync.when(
           loading: () => const Center(
             child: Padding(
-              padding: EdgeInsets.all(20),
-              child: CircularProgressIndicator(),
-            ),
+                padding: EdgeInsets.all(20),
+                child: CircularProgressIndicator()),
           ),
           error: (error, _) => Container(
             padding: const EdgeInsets.all(16),
@@ -88,23 +92,19 @@ class ProductReviewsSection extends ConsumerWidget {
           ),
           data: (response) {
             if (response.reviews.isEmpty) {
-              return _buildNoReviews(context, response);
+              return _buildNoReviews(context);
             }
             return Column(
               children: [
-                // Rating Summary Card
                 _buildRatingSummary(response),
                 const SizedBox(height: 16),
-                // Reviews List
                 ...response.reviews.take(5).map((review) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: _buildReviewCard(review),
                     )),
                 if (response.reviews.length > 5)
                   TextButton(
-                    onPressed: () {
-                      // TODO: Navigate to all reviews screen
-                    },
+                    onPressed: () {},
                     child: Text(
                       isRtl
                           ? 'عرض جميع التقييمات (${response.totalReviews})'
@@ -119,7 +119,7 @@ class ProductReviewsSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildNoReviews(BuildContext context, ReviewsResponse response) {
+  Widget _buildNoReviews(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -129,29 +129,22 @@ class ProductReviewsSection extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.rate_review_outlined,
-            size: 48,
-            color: AppColors.textTertiary,
-          ),
+          Icon(Icons.rate_review_outlined,
+              size: 48, color: AppColors.textTertiary),
           const SizedBox(height: 12),
           Text(
             isRtl ? 'لا توجد تقييمات بعد' : 'No reviews yet',
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary),
           ),
           const SizedBox(height: 4),
           Text(
             isRtl
                 ? 'كن أول من يقيم هذا المنتج!'
                 : 'Be the first to review this product!',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textTertiary,
-            ),
+            style: TextStyle(fontSize: 13, color: AppColors.textTertiary),
             textAlign: TextAlign.center,
           ),
         ],
@@ -167,27 +160,19 @@ class ProductReviewsSection extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Colors.amber.shade50,
-            Colors.orange.shade50,
-          ],
-        ),
+            colors: [Colors.amber.shade50, Colors.orange.shade50]),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.amber.shade200),
       ),
       child: Row(
         children: [
-          // Big rating number
           Column(
             children: [
-              Text(
-                rating.toStringAsFixed(1),
-                style: TextStyle(
-                  fontSize: 42,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.amber.shade800,
-                ),
-              ),
+              Text(rating.toStringAsFixed(1),
+                  style: TextStyle(
+                      fontSize: 42,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amber.shade800)),
               Row(
                 children: List.generate(5, (index) {
                   final starValue = index + 1;
@@ -205,26 +190,18 @@ class ProductReviewsSection extends ConsumerWidget {
             ],
           ),
           const SizedBox(width: 20),
-          // Review count
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  isRtl ? 'بناءً على' : 'Based on',
-                  style: TextStyle(
-                    color: Colors.amber.shade800,
-                    fontSize: 13,
-                  ),
-                ),
-                Text(
-                  isRtl ? '$count تقييم' : '$count reviews',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.amber.shade900,
-                  ),
-                ),
+                Text(isRtl ? 'بناءً على' : 'Based on',
+                    style:
+                        TextStyle(color: Colors.amber.shade800, fontSize: 13)),
+                Text(isRtl ? '$count تقييم' : '$count reviews',
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.amber.shade900)),
               ],
             ),
           ),
@@ -235,6 +212,7 @@ class ProductReviewsSection extends ConsumerWidget {
 
   Widget _buildReviewCard(Review review) {
     final dateFormat = DateFormat('yyyy/MM/dd', isRtl ? 'ar' : 'en');
+    final isMyReview = currentUserId != null && review.userId == currentUserId;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -244,10 +222,9 @@ class ProductReviewsSection extends ConsumerWidget {
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(8),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
+              color: Colors.black.withAlpha(8),
+              blurRadius: 8,
+              offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -256,7 +233,6 @@ class ProductReviewsSection extends ConsumerWidget {
           // User info row
           Row(
             children: [
-              // Avatar
               CircleAvatar(
                 radius: 20,
                 backgroundColor: AppColors.primary.withAlpha(50),
@@ -269,9 +245,8 @@ class ProductReviewsSection extends ConsumerWidget {
                             ? review.user!.fullName[0].toUpperCase()
                             : '?',
                         style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold),
                       )
                     : null,
               ),
@@ -280,24 +255,15 @@ class ProductReviewsSection extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      review.user?.fullName ?? 'Anonymous',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    Text(
-                      dateFormat.format(review.createdAt),
-                      style: TextStyle(
-                        color: AppColors.textTertiary,
-                        fontSize: 12,
-                      ),
-                    ),
+                    Text(review.user?.fullName ?? 'Anonymous',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 14)),
+                    Text(dateFormat.format(review.createdAt),
+                        style: TextStyle(
+                            color: AppColors.textTertiary, fontSize: 12)),
                   ],
                 ),
               ),
-              // Star rating
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -309,13 +275,10 @@ class ProductReviewsSection extends ConsumerWidget {
                     const Icon(Icons.star_rounded,
                         color: Colors.amber, size: 16),
                     const SizedBox(width: 4),
-                    Text(
-                      '${review.rating}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.amber.shade800,
-                      ),
-                    ),
+                    Text('${review.rating}',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.amber.shade800)),
                   ],
                 ),
               ),
@@ -324,35 +287,169 @@ class ProductReviewsSection extends ConsumerWidget {
           // Comment
           if (review.comment != null && review.comment!.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text(
-              review.comment!,
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                height: 1.5,
+            Text(review.comment!,
+                style: TextStyle(color: AppColors.textSecondary, height: 1.5)),
+          ],
+
+          // Owner Reply
+          if (review.ownerReply != null && review.ownerReply!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withAlpha(15),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.primary.withAlpha(40)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.reply_rounded,
+                          size: 16, color: AppColors.primary),
+                      const SizedBox(width: 6),
+                      Text(
+                        isRtl ? 'رد صاحب المشروع' : 'Owner Reply',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: AppColors.primary),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(review.ownerReply!,
+                      style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                          height: 1.4)),
+                ],
               ),
             ),
           ],
 
-          if (isOwner && onReportComment != null) ...[
+          // Action buttons
+          if (isMyReview || isOwner) ...[
             const SizedBox(height: 12),
             const Divider(),
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: TextButton.icon(
-                onPressed: () => onReportComment!(review),
-                icon: const Icon(Icons.flag_outlined,
-                    size: 18, color: Colors.red),
-                label: Text(
-                  isRtl ? 'إبلاغ عن تعليق' : 'Report Comment',
-                  style: const TextStyle(color: Colors.red),
-                ),
-                style: TextButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (isMyReview) ...[
+                  TextButton.icon(
+                    onPressed: onEditReview != null
+                        ? () => onEditReview!(review)
+                        : null,
+                    icon: const Icon(Icons.edit_outlined, size: 16),
+                    label: Text(isRtl ? 'تعديل' : 'Edit'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    onPressed: onDeleteReview != null
+                        ? () => onDeleteReview!(review)
+                        : null,
+                    icon: const Icon(Icons.delete_outline, size: 16),
+                    label: Text(isRtl ? 'حذف' : 'Delete'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
+                if (isOwner && !isMyReview) ...[
+                  if (review.ownerReply == null)
+                    TextButton.icon(
+                      onPressed: onReplyReview != null
+                          ? () => onReplyReview!(review)
+                          : null,
+                      icon: const Icon(Icons.reply_rounded, size: 16),
+                      label: Text(isRtl ? 'رد' : 'Reply'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  if (review.ownerReply != null) ...[
+                    TextButton.icon(
+                      onPressed: onEditReply != null
+                          ? () => onEditReply!(review)
+                          : null,
+                      icon: const Icon(Icons.edit_outlined, size: 16),
+                      label: Text(isRtl ? 'تعديل الرد' : 'Edit Reply'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton.icon(
+                      onPressed: onDeleteReply != null
+                          ? () => onDeleteReply!(review)
+                          : null,
+                      icon: const Icon(Icons.delete_outline, size: 16),
+                      label: Text(isRtl ? 'حذف الرد' : 'Delete Reply'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ],
+                  // Owner can report any review comment
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    onPressed: onReportComment != null
+                        ? () => onReportComment!(review)
+                        : null,
+                    icon: const Icon(Icons.flag_outlined, size: 16),
+                    label: Text(isRtl ? 'إبلاغ' : 'Report'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.orange,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
+                // Customer can report owner's reply to their OWN review
+                if (!isOwner && isMyReview && review.ownerReply != null) ...[
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    onPressed: onReportReply != null
+                        ? () => onReportReply!(review)
+                        : null,
+                    icon: const Icon(Icons.flag_outlined, size: 16),
+                    label: Text(isRtl ? 'إبلاغ عن الرد' : 'Report Reply'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.orange,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ],

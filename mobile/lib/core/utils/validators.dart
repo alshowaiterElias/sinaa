@@ -20,7 +20,7 @@ class Validators {
   /// Password validation - matches backend requirements
   /// - Minimum 8 characters
   /// - At least one uppercase letter
-  /// - At least one lowercase letter  
+  /// - At least one lowercase letter
   /// - At least one number
   static String? password(String? value, {bool required = true}) {
     if (value == null || value.isEmpty) {
@@ -75,22 +75,22 @@ class Validators {
     if (value == null || value.isEmpty) {
       return required ? 'يرجى إدخال رقم الجوال' : null;
     }
-    
+
     // Remove spaces and dashes
     final cleaned = value.replaceAll(RegExp(r'[\s\-]'), '');
-    
+
     // Saudi phone patterns
     final patterns = [
-      RegExp(r'^\+966[5][0-9]{8}$'),    // +966500000000
-      RegExp(r'^966[5][0-9]{8}$'),       // 966500000000
-      RegExp(r'^0[5][0-9]{8}$'),         // 0500000000
-      RegExp(r'^[5][0-9]{8}$'),          // 500000000
+      RegExp(r'^\+967[7][0-9]{8}$'), // +966500000000
+      RegExp(r'^967[7][0-9]{8}$'), // 966500000000
+      RegExp(r'^0[7][0-9]{8}$'), // 0500000000
+      RegExp(r'^[7][0-9]{8}$'), // 500000000
     ];
-    
+
     final isValid = patterns.any((pattern) => pattern.hasMatch(cleaned));
-    
+
     if (!isValid) {
-      return 'يرجى إدخال رقم جوال سعودي صحيح (مثال: 05xxxxxxxx)';
+      return 'يرجى إدخال رقم جوال يمني صحيح (مثال: 7xxxxxxxx)';
     }
     return null;
   }
@@ -154,4 +154,3 @@ class Validators {
     return null;
   }
 }
-

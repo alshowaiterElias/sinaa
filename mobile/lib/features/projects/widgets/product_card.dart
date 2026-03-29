@@ -83,7 +83,7 @@ class ProductCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${product.basePrice} SAR', // TODO: Format currency properly
+                    '${product.basePrice} YER', // TODO: Format currency properly
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.bold,

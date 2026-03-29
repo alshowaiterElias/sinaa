@@ -90,6 +90,8 @@ class ApiEndpoints {
   static const String resetPassword = '/auth/reset-password';
   static const String me = '/auth/me';
   static const String changePassword = '/auth/change-password';
+  static const String verifyEmail = '/auth/verify-email';
+  static const String resendVerification = '/auth/resend-verification';
 
   // Categories endpoints
   static const String categories = '/categories';
@@ -108,6 +110,7 @@ class ApiEndpoints {
   static String projectDetail(int id) => '/projects/$id';
   static String projectProducts(int id) => '/projects/$id/products';
   static const String myProject = '/projects/my-project';
+  static const String projectCities = '/projects/cities';
 
   // Cart endpoints
   static const String cart = '/cart';

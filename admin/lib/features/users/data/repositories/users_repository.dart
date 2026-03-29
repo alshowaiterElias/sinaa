@@ -49,6 +49,22 @@ class UsersRepository {
       rethrow;
     }
   }
+
+  Future<void> createAdmin({
+    required String email,
+    required String password,
+    required String fullName,
+  }) async {
+    try {
+      await _dio.post('/admin/users', data: {
+        'email': email,
+        'password': password,
+        'fullName': fullName,
+      });
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
 
 class UsersResponse {

@@ -137,10 +137,7 @@ class ProductsListNotifier extends Notifier<ProductsListState> {
         isLoading: false,
       );
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
@@ -236,6 +233,18 @@ class ProductsListNotifier extends Notifier<ProductsListState> {
     }
   }
 
+  /// Toggle featured status
+  Future<bool> toggleFeatured(int id) async {
+    try {
+      final product = await _repository.toggleFeatured(id);
+      _updateProductInList(product);
+      return true;
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return false;
+    }
+  }
+
   /// Update product in list
   void _updateProductInList(Product updated) {
     final index = state.products.indexWhere((p) => p.id == updated.id);
@@ -253,11 +262,7 @@ class ProductDetailState {
   final bool isLoading;
   final String? error;
 
-  const ProductDetailState({
-    this.product,
-    this.isLoading = false,
-    this.error,
-  });
+  const ProductDetailState({this.product, this.isLoading = false, this.error});
 
   ProductDetailState copyWith({
     Product? product,
@@ -277,12 +282,14 @@ class ProductDetailState {
 /// Products list provider
 final productsListProvider =
     NotifierProvider<ProductsListNotifier, ProductsListState>(() {
-  return ProductsListNotifier();
-});
+      return ProductsListNotifier();
+    });
 
 /// Product detail provider (family) - using FutureProvider.family for simpler pattern
-final productDetailProvider =
-    FutureProvider.autoDispose.family<Product, int>((ref, id) async {
+final productDetailProvider = FutureProvider.autoDispose.family<Product, int>((
+  ref,
+  id,
+) async {
   final repository = ref.watch(productsRepositoryProvider);
   return await repository.getProductById(id);
 });

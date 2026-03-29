@@ -6,6 +6,7 @@ import '../../../config/theme.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../data/providers/categories_provider.dart';
 import '../../../data/providers/search_provider.dart';
+import '../../../data/providers/projects_provider.dart';
 import '../../projects/widgets/project_card.dart';
 import '../../projects/widgets/product_card.dart';
 import '../../../shared/widgets/custom_text_field.dart';
@@ -366,167 +367,89 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Sort by
-                      Text(
-                        l10n.tr('sortBy'),
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          if (isProjectsTab)
-                            _buildSortChip(
-                              context: context,
-                              label: l10n.tr('location.sortByDistance'),
-                              value: 'distance',
-                              selected: sortBy == 'distance',
-                              icon: Icons.near_me_outlined,
-                              onTap: () =>
-                                  setSheetState(() => sortBy = 'distance'),
-                            ),
-                          _buildSortChip(
-                            context: context,
-                            label: l10n.tr('rating'),
-                            value: 'rating',
-                            selected: sortBy == 'rating',
-                            icon: Icons.star_rounded,
-                            onTap: () => setSheetState(() => sortBy = 'rating'),
-                          ),
-                          _buildSortChip(
-                            context: context,
-                            label: l10n.tr('location.sortByNewest'),
-                            value: 'newest',
-                            selected: sortBy == 'newest',
-                            icon: Icons.schedule_rounded,
-                            onTap: () => setSheetState(() => sortBy = 'newest'),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Distance filter (Only for Projects)
                       if (isProjectsTab) ...[
-                        Row(
-                          children: [
-                            Text(
-                              l10n.tr('location.distanceFilter'),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                '${distanceRadius.toInt()} ${l10n.tr('km')}',
-                                style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
+                        // === PROJECTS TAB: City-only filter ===
                         Text(
-                          l10n.tr('location.distanceFilterHint'),
+                          l10n.tr('city'),
                           style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.textTertiary,
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
                                   ),
                         ),
                         const SizedBox(height: 12),
-                        Slider(
-                          value: distanceRadius,
-                          min: 5,
-                          max: 100,
-                          divisions: 19,
-                          label: '${distanceRadius.toInt()} km',
-                          onChanged: (value) {
-                            setSheetState(() {
-                              distanceRadius = value;
-                            });
+                        Consumer(
+                          builder: (context, ref, _) {
+                            final citiesAsync =
+                                ref.watch(projectCitiesProvider);
+                            return citiesAsync.when(
+                              data: (cities) {
+                                return Autocomplete<String>(
+                                  optionsBuilder: (textEditingValue) {
+                                    if (textEditingValue.text.isEmpty) {
+                                      return cities;
+                                    }
+                                    return cities.where((c) => c
+                                        .toLowerCase()
+                                        .contains(textEditingValue.text
+                                            .toLowerCase()));
+                                  },
+                                  initialValue:
+                                      TextEditingValue(text: city ?? ''),
+                                  onSelected: (selectedCity) {
+                                    setSheetState(() {
+                                      city = selectedCity;
+                                    });
+                                  },
+                                  fieldViewBuilder: (context, controller,
+                                      focusNode, onSubmitted) {
+                                    return TextField(
+                                      controller: controller,
+                                      focusNode: focusNode,
+                                      decoration: InputDecoration(
+                                        hintText: context.isRtl
+                                            ? 'ابحث عن مدينة...'
+                                            : 'Search city...',
+                                        prefixIcon: const Icon(
+                                            Icons.location_city_rounded),
+                                        suffixIcon: city != null
+                                            ? IconButton(
+                                                icon: const Icon(Icons.clear),
+                                                onPressed: () {
+                                                  controller.clear();
+                                                  setSheetState(() {
+                                                    city = null;
+                                                  });
+                                                },
+                                              )
+                                            : null,
+                                        border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        filled: true,
+                                        fillColor: AppColors.surfaceVariant,
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                              loading: () => const Center(
+                                  child: CircularProgressIndicator()),
+                              error: (e, _) => Text(
+                                context.isRtl
+                                    ? 'فشل تحميل المدن'
+                                    : 'Failed to load cities',
+                                style: const TextStyle(color: AppColors.error),
+                              ),
+                            );
                           },
                         ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '5 ${l10n.tr('km')}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: AppColors.textTertiary,
-                                  ),
-                            ),
-                            Text(
-                              '100 ${l10n.tr('km')}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: AppColors.textTertiary,
-                                  ),
-                            ),
-                          ],
-                        ),
                         const SizedBox(height: 24),
-                      ],
-
-                      // Rating Filter (Detailed)
-                      Text(
-                        l10n.tr('rating'),
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                      ),
-                      const SizedBox(height: 12),
-                      Column(
-                        children: [4, 3, 2, 1].map((rating) {
-                          return RadioListTile<double>(
-                            value: rating.toDouble(),
-                            groupValue: minRating,
-                            onChanged: (value) {
-                              setSheetState(() {
-                                minRating = value;
-                              });
-                            },
-                            title: Row(
-                              children: [
-                                Text('$rating+ '),
-                                const Icon(Icons.star_rounded,
-                                    color: AppColors.warning, size: 16),
-                              ],
-                            ),
-                            activeColor: AppColors.primary,
-                            contentPadding: EdgeInsets.zero,
-                            dense: true,
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // City filter (Only for Projects)
-                      if (isProjectsTab) ...[
+                      ] else ...[
+                        // === PRODUCTS TAB: Sort + Rating filters ===
+                        // Sort by
                         Text(
-                          l10n.tr('city'),
+                          l10n.tr('sortBy'),
                           style:
                               Theme.of(context).textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
@@ -536,20 +459,63 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                         Wrap(
                           spacing: 10,
                           runSpacing: 10,
-                          children:
-                              ['الرياض', 'جدة', 'الدمام', 'مكة', 'المدينة']
-                                  .map((c) => FilterChip(
-                                        label: Text(c),
-                                        selected: city == c,
-                                        onSelected: (selected) {
-                                          setSheetState(() {
-                                            city = selected ? c : null;
-                                          });
-                                        },
-                                      ))
-                                  .toList(),
+                          children: [
+                            _buildSortChip(
+                              context: context,
+                              label: l10n.tr('rating'),
+                              value: 'rating',
+                              selected: sortBy == 'rating',
+                              icon: Icons.star_rounded,
+                              onTap: () =>
+                                  setSheetState(() => sortBy = 'rating'),
+                            ),
+                            _buildSortChip(
+                              context: context,
+                              label: l10n.tr('location.sortByNewest'),
+                              value: 'newest',
+                              selected: sortBy == 'newest',
+                              icon: Icons.schedule_rounded,
+                              onTap: () =>
+                                  setSheetState(() => sortBy = 'newest'),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 40),
+
+                        const SizedBox(height: 24),
+
+                        // Rating Filter
+                        Text(
+                          l10n.tr('rating'),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                        const SizedBox(height: 12),
+                        Column(
+                          children: [4, 3, 2, 1].map((rating) {
+                            return RadioListTile<double>(
+                              value: rating.toDouble(),
+                              groupValue: minRating,
+                              onChanged: (value) {
+                                setSheetState(() {
+                                  minRating = value;
+                                });
+                              },
+                              title: Row(
+                                children: [
+                                  Text('$rating+ '),
+                                  const Icon(Icons.star_rounded,
+                                      color: AppColors.warning, size: 16),
+                                ],
+                              ),
+                              activeColor: AppColors.primary,
+                              contentPadding: EdgeInsets.zero,
+                              dense: true,
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 24),
                       ],
                     ],
                   ),

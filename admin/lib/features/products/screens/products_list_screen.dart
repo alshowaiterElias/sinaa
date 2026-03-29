@@ -84,7 +84,10 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen>
               _buildStatBadge('الإجمالي', state.total, AdminColors.primary),
               const SizedBox(width: 12),
               _buildStatBadge(
-                  'في الانتظار', state.pendingCount, AdminColors.warning),
+                'في الانتظار',
+                state.pendingCount,
+                AdminColors.warning,
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -161,10 +164,10 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen>
             child: state.isLoading && state.products.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : state.error != null && state.products.isEmpty
-                    ? _buildErrorState(state.error!)
-                    : state.products.isEmpty
-                        ? _buildEmptyState()
-                        : _buildProductsTable(state),
+                ? _buildErrorState(state.error!)
+                : state.products.isEmpty
+                ? _buildEmptyState()
+                : _buildProductsTable(state),
           ),
         ],
       ),
@@ -227,11 +230,16 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.inventory_2_outlined,
-              size: 64, color: AdminColors.textTertiary),
+          Icon(
+            Icons.inventory_2_outlined,
+            size: 64,
+            color: AdminColors.textTertiary,
+          ),
           SizedBox(height: 16),
-          Text('لا توجد منتجات',
-              style: TextStyle(color: AdminColors.textSecondary)),
+          Text(
+            'لا توجد منتجات',
+            style: TextStyle(color: AdminColors.textSecondary),
+          ),
         ],
       ),
     );
@@ -252,8 +260,9 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen>
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: DataTable(
-                headingRowColor:
-                    WidgetStateProperty.all(AdminColors.surfaceVariant),
+                headingRowColor: WidgetStateProperty.all(
+                  AdminColors.surfaceVariant,
+                ),
                 columns: const [
                   DataColumn(label: Text('المنتج')),
                   DataColumn(label: Text('المشروع')),
@@ -273,7 +282,8 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen>
                       DataCell(Text(product.category?.nameAr ?? '-')),
                       // Price
                       DataCell(
-                          Text('${product.basePrice.toStringAsFixed(2)} ر.س')),
+                        Text('${product.basePrice.toStringAsFixed(2)} ر.ي'),
+                      ),
                       // Status
                       DataCell(_buildStatusBadge(product)),
                       // Actions
@@ -427,6 +437,18 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen>
             onPressed: () => _enableProduct(product),
           ),
 
+        // Featured toggle
+        IconButton(
+          icon: Icon(
+            product.isFeatured
+                ? Icons.star_rounded
+                : Icons.star_outline_rounded,
+            color: product.isFeatured ? Colors.amber : Colors.grey,
+          ),
+          tooltip: product.isFeatured ? 'إلغاء التمييز' : 'تمييز المنتج',
+          onPressed: () => _toggleFeatured(product),
+        ),
+
         // View details
         IconButton(
           icon: const Icon(Icons.visibility),
@@ -474,10 +496,8 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen>
   Future<void> _rejectProduct(Product product) async {
     final reason = await showDialog<String>(
       context: context,
-      builder: (context) => RejectDialog(
-        title: 'رفض المنتج',
-        itemName: product.nameAr,
-      ),
+      builder: (context) =>
+          RejectDialog(title: 'رفض المنتج', itemName: product.nameAr),
     );
 
     if (reason != null && reason.isNotEmpty) {
@@ -522,13 +542,32 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen>
   }
 
   Future<void> _enableProduct(Product product) async {
-    final success =
-        await ref.read(productsListProvider.notifier).enableProduct(product.id);
+    final success = await ref
+        .read(productsListProvider.notifier)
+        .enableProduct(product.id);
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('تم تفعيل المنتج'),
           backgroundColor: AdminColors.success,
+        ),
+      );
+    }
+  }
+
+  Future<void> _toggleFeatured(Product product) async {
+    final success = await ref
+        .read(productsListProvider.notifier)
+        .toggleFeatured(product.id);
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            product.isFeatured ? 'تم إلغاء تمييز المنتج' : 'تم تمييز المنتج',
+          ),
+          backgroundColor: product.isFeatured
+              ? AdminColors.warning
+              : AdminColors.success,
         ),
       );
     }

@@ -7,10 +7,14 @@ import '../../../config/routes.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../data/models/product_model.dart';
+import '../../../data/models/review_model.dart';
 import '../../../data/repositories/products_repository.dart';
+import '../../../data/repositories/review_repository.dart';
 import '../../../data/repositories/chat_repository.dart';
 import '../../../data/providers/cart_provider.dart';
 import '../../../data/providers/transaction_provider.dart';
+import '../../../data/providers/auth_provider.dart';
+import '../../../data/providers/reviews_provider.dart';
 import '../widgets/product_reviews_section.dart';
 import 'product_form_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -325,7 +329,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       _buildDetailRow(
                         icon: Icons.payments_rounded,
                         label: isRtl ? 'السعر الأساسي' : 'Base Price',
-                        value: '${product.basePrice.toStringAsFixed(2)} SAR',
+                        value: '${product.basePrice.toStringAsFixed(2)} YER',
                         valueColor: AppColors.primary,
                       ),
                       if (product.variants.isNotEmpty) ...[
@@ -400,6 +404,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           onTap: _navigateToEdit,
                         ),
                       ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildActionButton(
+                          icon: Icons.delete_rounded,
+                          label: isRtl ? 'حذف' : 'Delete',
+                          color: Colors.red,
+                          onTap: _deleteProduct,
+                        ),
+                      ),
                     ],
                   ),
 
@@ -410,6 +423,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     productId: product.id,
                     isRtl: isRtl,
                     isOwner: true,
+                    currentUserId: ref.read(currentUserProvider)?.id,
+                    onReplyReview: _showReplyDialog,
+                    onEditReview: _showEditReviewDialog,
+                    onDeleteReview: _confirmDeleteReview,
+                    onEditReply: _showEditReplyDialog,
+                    onDeleteReply: _confirmDeleteReply,
                     onReportComment: (review) {
                       context.push(
                         Routes.createTicket,
@@ -650,6 +669,334 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     }
   }
 
+  Future<void> _deleteProduct() async {
+    final isRtl = context.isRtl;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(isRtl ? 'حذف المنتج' : 'Delete Product'),
+        content: Text(isRtl
+            ? 'هل أنت متأكد من حذف هذا المنتج؟ لا يمكن التراجع عن هذا الإجراء.'
+            : 'Are you sure you want to delete this product? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(isRtl ? 'إلغاء' : 'Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text(isRtl ? 'حذف' : 'Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final repository = ref.read(productsRepositoryProvider);
+      await repository.deleteProduct(_product!.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(isRtl ? 'تم حذف المنتج' : 'Product deleted')),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:
+                  Text(isRtl ? 'فشل حذف المنتج' : 'Failed to delete product')),
+        );
+      }
+    }
+  }
+
+  void _showReplyDialog(Review review) {
+    final isRtl = context.isRtl;
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(isRtl ? 'الرد على التقييم' : 'Reply to Review'),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          decoration: InputDecoration(
+            hintText: isRtl ? 'اكتب ردك...' : 'Write your reply...',
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(isRtl ? 'إلغاء' : 'Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (controller.text.trim().isEmpty) return;
+              Navigator.pop(ctx);
+              try {
+                final repo = ref.read(reviewRepositoryProvider);
+                await repo.replyToReview(
+                  reviewId: review.id,
+                  reply: controller.text.trim(),
+                );
+                ref.invalidate(productReviewsProvider(_product!.id));
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(isRtl ? 'تم إرسال الرد' : 'Reply sent')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(
+                            isRtl ? 'فشل إرسال الرد' : 'Failed to send reply')),
+                  );
+                }
+              }
+            },
+            child: Text(isRtl ? 'إرسال' : 'Send'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditReplyDialog(Review review) {
+    final isRtl = context.isRtl;
+    final controller = TextEditingController(text: review.ownerReply ?? '');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(isRtl ? 'تعديل الرد' : 'Edit Reply'),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          decoration: InputDecoration(
+            hintText: isRtl ? 'اكتب ردك...' : 'Write your reply...',
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(isRtl ? 'إلغاء' : 'Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (controller.text.trim().isEmpty) return;
+              Navigator.pop(ctx);
+              try {
+                final repo = ref.read(reviewRepositoryProvider);
+                await repo.updateReply(
+                  reviewId: review.id,
+                  reply: controller.text.trim(),
+                );
+                ref.invalidate(productReviewsProvider(_product!.id));
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content:
+                            Text(isRtl ? 'تم تعديل الرد' : 'Reply updated')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(isRtl
+                            ? 'فشل تعديل الرد'
+                            : 'Failed to update reply')),
+                  );
+                }
+              }
+            },
+            child: Text(isRtl ? 'حفظ' : 'Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteReply(Review review) {
+    final isRtl = context.isRtl;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(isRtl ? 'حذف الرد' : 'Delete Reply'),
+        content: Text(isRtl
+            ? 'هل أنت متأكد من حذف هذا الرد؟'
+            : 'Are you sure you want to delete this reply?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(isRtl ? 'إلغاء' : 'Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                final repo = ref.read(reviewRepositoryProvider);
+                await repo.deleteReply(review.id);
+                ref.invalidate(productReviewsProvider(_product!.id));
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(isRtl ? 'تم حذف الرد' : 'Reply deleted')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(
+                            isRtl ? 'فشل حذف الرد' : 'Failed to delete reply')),
+                  );
+                }
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text(isRtl ? 'حذف' : 'Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditReviewDialog(Review review) {
+    final isRtl = context.isRtl;
+    final commentController = TextEditingController(text: review.comment);
+    int selectedRating = review.rating;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(isRtl ? 'تعديل التقييم' : 'Edit Review'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (index) {
+                  return IconButton(
+                    icon: Icon(
+                      index < selectedRating
+                          ? Icons.star_rounded
+                          : Icons.star_outline_rounded,
+                      color: Colors.amber,
+                      size: 32,
+                    ),
+                    onPressed: () =>
+                        setDialogState(() => selectedRating = index + 1),
+                  );
+                }),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: commentController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: isRtl ? 'تعليقك...' : 'Your comment...',
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(isRtl ? 'إلغاء' : 'Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                try {
+                  final repo = ref.read(reviewRepositoryProvider);
+                  await repo.updateReview(
+                    reviewId: review.id,
+                    rating: selectedRating,
+                    comment: commentController.text.trim(),
+                  );
+                  ref.invalidate(productReviewsProvider(_product!.id));
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text(
+                              isRtl ? 'تم تعديل التقييم' : 'Review updated')),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text(isRtl
+                              ? 'فشل تعديل التقييم'
+                              : 'Failed to update review')),
+                    );
+                  }
+                }
+              },
+              child: Text(isRtl ? 'حفظ' : 'Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteReview(Review review) async {
+    final isRtl = context.isRtl;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(isRtl ? 'حذف التقييم' : 'Delete Review'),
+        content: Text(isRtl
+            ? 'هل أنت متأكد من حذف هذا التقييم؟'
+            : 'Are you sure you want to delete this review?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(isRtl ? 'إلغاء' : 'Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text(isRtl ? 'حذف' : 'Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final repo = ref.read(reviewRepositoryProvider);
+      await repo.deleteReview(review.id);
+      ref.invalidate(productReviewsProvider(_product!.id));
+      _loadProduct(); // Refresh product to update rating
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(isRtl ? 'تم حذف التقييم' : 'Review deleted')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:
+                  Text(isRtl ? 'فشل حذف التقييم' : 'Failed to delete review')),
+        );
+      }
+    }
+  }
+
   // ============ CUSTOMER VIEW ============
   Widget _buildCustomerView() {
     final product = _product!;
@@ -862,7 +1209,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             Padding(
                               padding: const EdgeInsets.only(bottom: 4),
                               child: Text(
-                                'SAR',
+                                'YER',
                                 style: TextStyle(
                                   color: AppColors.primary,
                                   fontSize: 16,
@@ -998,7 +1345,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                       if (variant.priceModifier != 0) ...[
                                         const SizedBox(height: 4),
                                         Text(
-                                          '${variant.priceModifier > 0 ? '+' : ''}${variant.priceModifier.toStringAsFixed(0)} SAR',
+                                          '${variant.priceModifier > 0 ? '+' : ''}${variant.priceModifier.toStringAsFixed(0)} YER',
                                           style: TextStyle(
                                             color: isSelected
                                                 ? Colors.white.withAlpha(200)
@@ -1117,6 +1464,20 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         ProductReviewsSection(
                           productId: product.id,
                           isRtl: isRtl,
+                          currentUserId: ref.read(currentUserProvider)?.id,
+                          onEditReview: _showEditReviewDialog,
+                          onDeleteReview: _confirmDeleteReview,
+                          onReportReply: (review) {
+                            context.push(
+                              Routes.createTicket,
+                              extra: {
+                                'initialSubject':
+                                    'Report Owner Reply on Product: ${product.nameAr}',
+                                'initialDescription':
+                                    'Reporting owner reply on review ${review.id} for product \"${product.nameAr}\".\n\nOwner reply content:\n${review.ownerReply}',
+                              },
+                            );
+                          },
                         ),
 
                         const SizedBox(height: 24),

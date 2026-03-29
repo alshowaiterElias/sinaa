@@ -5,7 +5,7 @@ class Helpers {
   Helpers._();
 
   // Format currency
-  static String formatCurrency(double amount, {String currency = 'SAR'}) {
+  static String formatCurrency(double amount, {String currency = 'YER'}) {
     final formatter = intl.NumberFormat.currency(
       symbol: currency,
       decimalDigits: 2,

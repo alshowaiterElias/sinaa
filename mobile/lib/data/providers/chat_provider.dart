@@ -109,6 +109,19 @@ class ConversationsNotifier extends Notifier<ConversationsState> {
 
     state = state.copyWith(conversations: updated);
   }
+
+  /// Delete a conversation (soft delete for current user)
+  Future<void> deleteConversation(int conversationId) async {
+    try {
+      await _repository.deleteConversation(conversationId);
+      // Remove from local state immediately
+      final updated =
+          state.conversations.where((c) => c.id != conversationId).toList();
+      state = state.copyWith(conversations: updated);
+    } catch (e) {
+      throw e;
+    }
+  }
 }
 
 /// State for a single chat

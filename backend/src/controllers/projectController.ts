@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
-import { Project, User, Product } from '../models';
+import { Project, User, Product, ProductImage, ProductVariant, Tag, Category } from '../models';
+import sequelize from '../config/database';
 import { PROJECT_STATUS } from '../config/constants';
 import {
     sendSuccess,
@@ -232,8 +233,45 @@ export const getProjectProducts = async (req: Request, res: Response) => {
         }
     }
 
+    const { status } = req.query as { status?: string };
+
+    const productWhere: any = {
+        projectId: id,
+    };
+
+    if (status) {
+        productWhere.status = status;
+    } else {
+        productWhere.status = { [Op.ne]: 'rejected' };
+    }
+
     const { count, rows } = await Product.findAndCountAll({
-        where: { projectId: id },
+        where: productWhere,
+        include: [
+            {
+                model: ProductImage,
+                as: 'images',
+                attributes: ['id', 'imageUrl', 'sortOrder'],
+            },
+            {
+                model: ProductVariant,
+                as: 'variants',
+                attributes: ['id', 'name', 'nameAr', 'priceModifier', 'quantity', 'isAvailable'],
+                where: { isAvailable: true },
+                required: false,
+            },
+            {
+                model: Tag,
+                as: 'tags',
+                attributes: ['id', 'name', 'nameAr'],
+                through: { attributes: [] },
+            },
+            {
+                model: Category,
+                as: 'category',
+                attributes: ['id', 'name', 'nameAr', 'icon'],
+            },
+        ],
         limit,
         offset,
         order: [['createdAt', 'DESC']],
@@ -244,6 +282,28 @@ export const getProjectProducts = async (req: Request, res: Response) => {
         limit,
         total: count,
     });
+};
+
+/**
+ * Get distinct cities from approved projects (for city filter dropdowns)
+ */
+export const getProjectCities = async (req: Request, res: Response) => {
+    try {
+        const cities = await Project.findAll({
+            attributes: [[sequelize.fn('DISTINCT', sequelize.col('city')), 'city']],
+            where: {
+                status: PROJECT_STATUS.APPROVED,
+                city: { [Op.ne]: '' },
+            },
+            order: [['city', 'ASC']],
+            raw: true,
+        });
+
+        const cityList = cities.map((c: any) => c.city).filter(Boolean);
+        return sendSuccess(res, cityList);
+    } catch (error: any) {
+        return sendError(res, 'SERVER_ERROR', 'Error fetching project cities', 500, error);
+    }
 };
 
 /**

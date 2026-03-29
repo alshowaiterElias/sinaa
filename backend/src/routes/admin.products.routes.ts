@@ -9,6 +9,7 @@ import {
     rejectProduct,
     disableProduct,
     enableProduct,
+    toggleFeatured,
 } from '../controllers/admin.products.controller';
 
 const router = Router();
@@ -48,6 +49,9 @@ router.put('/:id/disable', validate([param('id').isInt(), ...reasonValidation]),
 
 // Enable product
 router.put('/:id/enable', validate([param('id').isInt()]), enableProduct);
+
+// Toggle featured
+router.put('/:id/featured', validate([param('id').isInt()]), toggleFeatured);
 
 export default router;
 

@@ -98,11 +98,75 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: state.conversations.length,
         itemBuilder: (context, index) {
-          return _buildConversationTile(
-            context,
-            state.conversations[index],
-            currentUserId,
-            isRtl,
+          final conversation = state.conversations[index];
+          return Dismissible(
+            key: Key('conv_${conversation.id}'),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              alignment: isRtl ? Alignment.centerLeft : Alignment.centerRight,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.red.shade400,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(Icons.delete_rounded,
+                  color: Colors.white, size: 28),
+            ),
+            confirmDismiss: (direction) async {
+              return await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text(isRtl ? 'حذف المحادثة' : 'Delete Conversation'),
+                  content: Text(isRtl
+                      ? 'هل تريد حذف هذه المحادثة؟ ستبقى المحادثة مرئية للطرف الآخر.'
+                      : 'Delete this conversation? It will still be visible to the other party.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text(isRtl ? 'إلغاء' : 'Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
+                      child: Text(isRtl ? 'حذف' : 'Delete'),
+                    ),
+                  ],
+                ),
+              );
+            },
+            onDismissed: (direction) async {
+              try {
+                await ref
+                    .read(conversationsProvider.notifier)
+                    .deleteConversation(conversation.id);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(isRtl
+                            ? 'تم حذف المحادثة'
+                            : 'Conversation deleted')),
+                  );
+                }
+              } catch (e) {
+                // Reload to restore if failed
+                ref.read(conversationsProvider.notifier).loadConversations();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(isRtl
+                            ? 'فشل حذف المحادثة'
+                            : 'Failed to delete conversation')),
+                  );
+                }
+              }
+            },
+            child: _buildConversationTile(
+              context,
+              conversation,
+              currentUserId,
+              isRtl,
+            ),
           );
         },
       ),

@@ -139,6 +139,22 @@ export const NotificationTemplates = {
     },
 
     /**
+     * Transaction accepted - customer can now write a review
+     * Sent to the customer when the project owner confirms the transaction
+     */
+    transactionAccepted(userId: number, transactionId: number, productId: number, productName: string): Promise<Notification> {
+        return createNotification({
+            userId,
+            type: 'review',
+            title: 'You can now write a review!',
+            titleAr: 'يمكنك الآن كتابة تقييم!',
+            body: `Your rating request for "${productName}" has been accepted. Tap to write your review.`,
+            bodyAr: `تم قبول طلب التقييم لمنتج "${productName}". اضغط لكتابة تقييمك.`,
+            data: { transactionId, productId },
+        });
+    },
+
+    /**
      * Review received notification
      */
     reviewReceived(userId: number, reviewerId: string, rating: number, projectId: number): Promise<Notification> {

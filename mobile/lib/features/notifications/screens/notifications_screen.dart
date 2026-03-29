@@ -131,7 +131,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   Widget _buildLoginPrompt(BuildContext context, AppLocalizations l10n) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: Text(l10n.tr('notifications.title'))),
+      appBar: AppBar(title: Text(l10n.tr('notification.title'))),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(40),
@@ -263,8 +263,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         // TODO: Navigate to transaction details when implemented
         break;
       case NotificationType.review:
-        // Navigate to my project to see reviews
-        context.push(Routes.myProject);
+        // If we have transactionId and productId, navigate to create review
+        if (data.transactionId != null && data.productId != null) {
+          context.push(
+            '/transactions/${data.transactionId}/review?productId=${data.productId}',
+          );
+        } else {
+          // Fallback: Navigate to my project to see reviews
+          context.push(Routes.myProject);
+        }
         break;
     }
   }

@@ -5,6 +5,7 @@ import {
     createConversation,
     sendMessage,
     markAsRead,
+    deleteConversation,
 } from '../controllers/conversations.controller';
 import { authenticate } from '../middleware/auth';
 
@@ -27,5 +28,8 @@ router.post('/:id/messages', sendMessage);
 
 // PUT /conversations/:id/read - Mark as read
 router.put('/:id/read', markAsRead);
+
+// DELETE /conversations/:id - Soft delete conversation for current user
+router.delete('/:id', deleteConversation);
 
 export default router;

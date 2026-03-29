@@ -10,12 +10,14 @@ export interface ConversationAttributes {
     user2Id: number;      // Normalized: always the larger user ID
     projectId: number | null;   // Optional: context for product-related chats
     lastMessageAt: Date | null;
+    deletedByUser1: boolean;
+    deletedByUser2: boolean;
     createdAt: Date;
 }
 
 // Attributes for creation
 export interface ConversationCreationAttributes
-    extends Optional<ConversationAttributes, 'id' | 'projectId' | 'lastMessageAt' | 'createdAt'> { }
+    extends Optional<ConversationAttributes, 'id' | 'projectId' | 'lastMessageAt' | 'deletedByUser1' | 'deletedByUser2' | 'createdAt'> { }
 
 // Conversation model class
 class Conversation
@@ -26,6 +28,8 @@ class Conversation
     public user2Id!: number;
     public projectId!: number | null;
     public lastMessageAt!: Date | null;
+    public deletedByUser1!: boolean;
+    public deletedByUser2!: boolean;
     public createdAt!: Date;
 
     // Associations
@@ -84,6 +88,18 @@ Conversation.init(
             type: DataTypes.DATE,
             allowNull: true,
             field: 'last_message_at',
+        },
+        deletedByUser1: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+            field: 'deleted_by_user1',
+        },
+        deletedByUser2: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+            field: 'deleted_by_user2',
         },
         createdAt: {
             type: DataTypes.DATE,

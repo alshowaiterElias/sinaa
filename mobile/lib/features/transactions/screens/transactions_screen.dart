@@ -39,11 +39,12 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           PopupMenuButton<TransactionStatus?>(
             icon: const Icon(Icons.filter_list),
             onSelected: (status) {
+              print(status);
               ref.read(transactionsProvider.notifier).setStatusFilter(status);
             },
             itemBuilder: (context) => [
               PopupMenuItem(
-                value: null,
+                value: TransactionStatus.all,
                 child: Text(isRtl ? 'الكل' : 'All'),
               ),
               PopupMenuItem(
@@ -53,10 +54,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               PopupMenuItem(
                 value: TransactionStatus.confirmed,
                 child: Text(isRtl ? 'مؤكد' : 'Confirmed'),
-              ),
-              PopupMenuItem(
-                value: TransactionStatus.disputed,
-                child: Text(isRtl ? 'متنازع' : 'Disputed'),
               ),
               PopupMenuItem(
                 value: TransactionStatus.cancelled,

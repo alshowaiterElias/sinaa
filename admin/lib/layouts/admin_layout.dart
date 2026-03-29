@@ -30,9 +30,7 @@ class _AdminLayoutState extends ConsumerState<AdminLayout> {
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             width: _isExpanded ? 260 : 70,
-            decoration: const BoxDecoration(
-              color: AdminColors.sidebarBg,
-            ),
+            decoration: const BoxDecoration(color: AdminColors.sidebarBg),
             child: Column(
               children: [
                 // Header
@@ -95,14 +93,12 @@ class _AdminLayoutState extends ConsumerState<AdminLayout> {
                         label: 'المشاريع',
                         path: AdminRoutes.projects,
                         isSelected: currentPath == AdminRoutes.projects,
-                        badge: 3,
                       ),
                       _buildNavItem(
                         icon: Icons.inventory_2_rounded,
                         label: 'المنتجات',
                         path: AdminRoutes.products,
                         isSelected: currentPath == AdminRoutes.products,
-                        badge: 5,
                       ),
                       _buildNavItem(
                         icon: Icons.category_rounded,
@@ -137,9 +133,7 @@ class _AdminLayoutState extends ConsumerState<AdminLayout> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: const BoxDecoration(
-                    border: Border(
-                      top: BorderSide(color: Colors.white12),
-                    ),
+                    border: Border(top: BorderSide(color: Colors.white12)),
                   ),
                   child: Row(
                     children: [
@@ -237,18 +231,6 @@ class _AdminLayoutState extends ConsumerState<AdminLayout> {
 
                       const Spacer(),
 
-                      // Notifications
-                      IconButton(
-                        onPressed: () {},
-                        icon: Badge(
-                          label: const Text('3'),
-                          child: const Icon(
-                            Icons.notifications_outlined,
-                            color: AdminColors.textSecondary,
-                          ),
-                        ),
-                      ),
-
                       const SizedBox(width: 8),
 
                       // Profile menu
@@ -287,11 +269,16 @@ class _AdminLayoutState extends ConsumerState<AdminLayout> {
                             value: 'logout',
                             child: Row(
                               children: [
-                                Icon(Icons.logout_rounded,
-                                    size: 20, color: AdminColors.error),
+                                Icon(
+                                  Icons.logout_rounded,
+                                  size: 20,
+                                  color: AdminColors.error,
+                                ),
                                 const SizedBox(width: 12),
-                                Text('تسجيل الخروج',
-                                    style: TextStyle(color: AdminColors.error)),
+                                Text(
+                                  'تسجيل الخروج',
+                                  style: TextStyle(color: AdminColors.error),
+                                ),
                               ],
                             ),
                           ),
@@ -327,9 +314,7 @@ class _AdminLayoutState extends ConsumerState<AdminLayout> {
                 ),
 
                 // Page content
-                Expanded(
-                  child: widget.child,
-                ),
+                Expanded(child: widget.child),
               ],
             ),
           ),
@@ -376,8 +361,9 @@ class _AdminLayoutState extends ConsumerState<AdminLayout> {
                         color: isSelected
                             ? Colors.white
                             : AdminColors.sidebarText.withOpacity(0.8),
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.w500,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                         fontSize: 14,
                       ),
                     ),
@@ -423,9 +409,7 @@ class _AdminLayoutState extends ConsumerState<AdminLayout> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AdminColors.error,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AdminColors.error),
             child: const Text('تسجيل الخروج'),
           ),
         ],

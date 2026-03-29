@@ -90,7 +90,11 @@ class TransactionsNotifier extends Notifier<TransactionsState> {
     state = state.copyWith(
       statusFilter: status,
       clearFilter: status == null,
+      isLoading: false,
     );
+    print(state.statusFilter);
+    print(state.statusFilter);
+    print(state.statusFilter);
     loadTransactions(refresh: true);
   }
 

@@ -194,7 +194,6 @@ class _TransactionDetailBodyState
   Widget build(BuildContext context) {
     final dateFormat =
         DateFormat('yyyy/MM/dd HH:mm', widget.isRtl ? 'ar' : 'en');
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -327,7 +326,7 @@ class _TransactionDetailBodyState
                 title: Text(widget.transaction.product!.name),
                 subtitle: widget.transaction.product!.price != null
                     ? Text(
-                        '${widget.transaction.product!.price!.toStringAsFixed(2)} SAR')
+                        '${widget.transaction.product!.price!.toStringAsFixed(2)} YER')
                     : null,
               ),
             ),
@@ -451,6 +450,8 @@ class _TransactionDetailBodyState
 
   IconData _getStatusIcon() {
     switch (widget.transaction.status) {
+      case TransactionStatus.all:
+        return Icons.all_inclusive;
       case TransactionStatus.pending:
         return Icons.hourglass_empty;
       case TransactionStatus.confirmed:

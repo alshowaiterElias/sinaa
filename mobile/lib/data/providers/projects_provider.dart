@@ -253,6 +253,12 @@ final projectProductsProvider =
   return response.products;
 });
 
+/// Provider to fetch distinct cities from approved projects
+final projectCitiesProvider = FutureProvider<List<String>>((ref) async {
+  final repository = ref.read(projectsRepositoryProvider);
+  return repository.getProjectCities();
+});
+
 /// Nearby projects state for location-based listing
 class NearbyProjectsState {
   final List<Project> projects;

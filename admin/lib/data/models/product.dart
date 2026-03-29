@@ -209,6 +209,7 @@ class Product {
   final ProductCategory? category;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final bool isFeatured;
 
   const Product({
     required this.id,
@@ -234,6 +235,7 @@ class Product {
     this.category,
     required this.createdAt,
     required this.updatedAt,
+    this.isFeatured = false,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -260,18 +262,18 @@ class Product {
       viewCount: json['viewCount'] as int? ?? 0,
       images: json['images'] != null
           ? (json['images'] as List)
-              .map((e) => ProductImage.fromJson(e as Map<String, dynamic>))
-              .toList()
+                .map((e) => ProductImage.fromJson(e as Map<String, dynamic>))
+                .toList()
           : const [],
       variants: json['variants'] != null
           ? (json['variants'] as List)
-              .map((e) => ProductVariant.fromJson(e as Map<String, dynamic>))
-              .toList()
+                .map((e) => ProductVariant.fromJson(e as Map<String, dynamic>))
+                .toList()
           : const [],
       tags: json['tags'] != null
           ? (json['tags'] as List)
-              .map((e) => ProductTag.fromJson(e as Map<String, dynamic>))
-              .toList()
+                .map((e) => ProductTag.fromJson(e as Map<String, dynamic>))
+                .toList()
           : const [],
       project: json['project'] != null
           ? ProductProject.fromJson(json['project'] as Map<String, dynamic>)
@@ -285,6 +287,7 @@ class Product {
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)
           : DateTime.now(),
+      isFeatured: json['isFeatured'] as bool? ?? false,
     );
   }
 

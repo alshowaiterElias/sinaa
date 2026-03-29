@@ -74,10 +74,13 @@ class FeaturedProductsNotifier extends Notifier<FeaturedProductsState> {
 
     try {
       final repository = ref.read(productsRepositoryProvider);
+
+      // Get explicitly featured products only
       final response = await repository.getProducts(
         page: 1,
         limit: 10,
         status: 'approved',
+        featured: true,
       );
 
       state = state.copyWith(

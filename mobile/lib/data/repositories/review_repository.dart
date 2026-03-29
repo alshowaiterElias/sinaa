@@ -141,6 +141,72 @@ class ReviewRepository {
       throw ApiException.fromDioError(e);
     }
   }
+
+  /// Reply to a review (project owner only, once)
+  Future<Review> replyToReview({
+    required int reviewId,
+    required String reply,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '${ApiEndpoints.review(reviewId)}/reply',
+        data: {'reply': reply},
+      );
+
+      if (response.data['success'] == true) {
+        return Review.fromJson(response.data['data']);
+      }
+      throw ApiException(
+        message:
+            response.data['error']?['message'] ?? 'Failed to reply to review',
+        code: response.data['error']?['code'] ?? 'UNKNOWN_ERROR',
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  /// Update owner reply to a review
+  Future<Review> updateReply({
+    required int reviewId,
+    required String reply,
+  }) async {
+    try {
+      final response = await _dio.put(
+        '${ApiEndpoints.review(reviewId)}/reply',
+        data: {'reply': reply},
+      );
+
+      if (response.data['success'] == true) {
+        return Review.fromJson(response.data['data']);
+      }
+      throw ApiException(
+        message: response.data['error']?['message'] ?? 'Failed to update reply',
+        code: response.data['error']?['code'] ?? 'UNKNOWN_ERROR',
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  /// Delete owner reply from a review
+  Future<void> deleteReply(int reviewId) async {
+    try {
+      final response = await _dio.delete(
+        '${ApiEndpoints.review(reviewId)}/reply',
+      );
+
+      if (response.data['success'] != true) {
+        throw ApiException(
+          message:
+              response.data['error']?['message'] ?? 'Failed to delete reply',
+          code: response.data['error']?['code'] ?? 'UNKNOWN_ERROR',
+        );
+      }
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
 }
 
 /// Provider for ReviewRepository

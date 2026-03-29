@@ -215,13 +215,37 @@ class AuthRepository {
 
   /// Reset password with token
   Future<void> resetPassword({
+    required String email,
     required String token,
     required String password,
   }) async {
     try {
       await _dio.post(ApiEndpoints.resetPassword, data: {
+        'email': email,
         'token': token,
         'password': password,
+      });
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  /// Verify email
+  Future<void> verifyEmail(String token) async {
+    try {
+      await _dio.post(ApiEndpoints.verifyEmail, data: {
+        'token': token,
+      });
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  /// Resend verification email
+  Future<void> resendVerificationEmail(String email) async {
+    try {
+      await _dio.post(ApiEndpoints.resendVerification, data: {
+        'email': email,
       });
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);

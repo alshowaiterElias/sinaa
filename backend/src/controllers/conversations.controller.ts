@@ -29,8 +29,8 @@ export const getConversations = async (req: Request, res: Response, next: NextFu
         const conversations = await Conversation.findAll({
             where: {
                 [Op.or]: [
-                    { user1Id: userId },
-                    { user2Id: userId },
+                    { user1Id: userId, deletedByUser1: false },
+                    { user2Id: userId, deletedByUser2: false },
                 ],
             },
             include: [
@@ -330,6 +330,9 @@ export const sendMessage = async (req: Request, res: Response, next: NextFunctio
 
         // Update conversation
         conversation.lastMessageAt = new Date();
+        // Reset delete flags so conversation reappears for both users
+        conversation.deletedByUser1 = false;
+        conversation.deletedByUser2 = false;
         await conversation.save();
 
         // Reload with sender
@@ -399,6 +402,38 @@ export const markAsRead = async (req: Request, res: Response, next: NextFunction
         );
 
         return sendSuccess(res, { markedAsRead: updated });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Delete a conversation (soft delete for current user only)
+ */
+export const deleteConversation = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user!.id;
+        const { id } = req.params;
+
+        const conversation = await Conversation.findByPk(id);
+
+        if (!conversation) {
+            return sendError(res, ERROR_CODES.NOT_FOUND, 'Conversation not found', 404);
+        }
+
+        if (!conversation.hasParticipant(userId)) {
+            return sendError(res, ERROR_CODES.AUTHORIZATION_ERROR, 'Access denied', 403);
+        }
+
+        // Set soft delete flag for the requesting user
+        if (conversation.user1Id === userId) {
+            conversation.deletedByUser1 = true;
+        } else {
+            conversation.deletedByUser2 = true;
+        }
+        await conversation.save();
+
+        return sendSuccess(res, null, 'Conversation deleted');
     } catch (error) {
         next(error);
     }

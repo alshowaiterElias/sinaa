@@ -51,6 +51,7 @@ export const getAllProducts = async (req: Request, res: Response) => {
             maxPrice,
             minRating,
             sort = 'newest',
+            featured,
         } = req.query;
 
         const offset = (Number(page) - 1) * Number(limit);
@@ -103,8 +104,30 @@ export const getAllProducts = async (req: Request, res: Response) => {
             ];
         }
 
+        // Category filter: if category has children, include all children too
         if (categoryId) {
-            where.categoryId = categoryId;
+            const parentCategory = await Category.findByPk(Number(categoryId));
+            if (parentCategory) {
+                const children = await Category.findAll({
+                    where: { parentId: parentCategory.id },
+                    attributes: ['id'],
+                });
+                if (children.length > 0) {
+                    // Parent category with children: include parent + all children
+                    const allCategoryIds = [parentCategory.id, ...children.map(c => c.id)];
+                    where.categoryId = { [Op.in]: allCategoryIds };
+                } else {
+                    // Leaf category or no children
+                    where.categoryId = categoryId;
+                }
+            } else {
+                where.categoryId = categoryId;
+            }
+        }
+
+        // Featured filter (Task 4)
+        if (featured === 'true') {
+            where.isFeatured = true;
         }
 
         if (minPrice || maxPrice) {
@@ -251,6 +274,7 @@ export const deleteProduct = async (req: Request, res: Response) => {
             return sendForbidden(res, 'You do not own this product');
         }
 
+        // Paranoid mode: sets deletedAt instead of hard deleting
         await product.destroy();
 
         return sendSuccess(res, null, 'Product deleted successfully');

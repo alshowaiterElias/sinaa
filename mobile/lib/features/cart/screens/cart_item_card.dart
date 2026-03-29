@@ -108,7 +108,7 @@ class CartItemCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 // Price
                 Text(
-                  '${product.basePrice.toStringAsFixed(0)} ${isRtl ? 'ر.س' : 'SAR'}',
+                  '${product.basePrice.toStringAsFixed(0)} ${isRtl ? 'ر.ي' : 'YER'}',
                   style: TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.bold,

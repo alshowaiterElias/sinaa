@@ -6,7 +6,7 @@ module.exports = {
     await queryInterface.bulkInsert('system_settings', [
       {
         setting_key: 'auto_confirm_days',
-        setting_value: '7',
+        setting_value: '1',
         description: 'Days before transaction auto-confirms',
         updated_at: new Date(),
       },

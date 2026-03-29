@@ -11,10 +11,10 @@ module.exports = {
     await queryInterface.bulkInsert('users', [
       {
         id: 2,
-        email: 'alshowaiterelias@gmail.com',
+        email: 'Test1@gmail.com',
         password_hash: PASSWORD_HASH,
         phone: '0512345678',
-        full_name: 'Elias Al-Showaiter',
+        full_name: 'Test',
         avatar_url: null,
         city: 'Riyadh',
         latitude: 24.7136,
@@ -33,7 +33,7 @@ module.exports = {
       {
         id: 3,
         email: 'admin@sinaa.sa',
-        password_hash: ADMIN_PASSWORD_HASH, // Keep admin password unchanged
+        password_hash: ADMIN_PASSWORD_HASH, // Keep admin password unchanged Admin@123
         phone: '+966500000000',
         full_name: 'مدير النظام',
         avatar_url: null,
@@ -53,7 +53,7 @@ module.exports = {
       },
       {
         id: 4,
-        email: 'alshowaiterelias1@gmail.com',
+        email: 'Test1@gmail.com',
         password_hash: PASSWORD_HASH,
         phone: '0512345677',
         full_name: 'Customer',
@@ -74,10 +74,10 @@ module.exports = {
       },
       {
         id: 5,
-        email: 'maria@gmail.com',
+        email: 'Test3@gmail.com',
         password_hash: PASSWORD_HASH,
         phone: '0512345676',
-        full_name: 'Maria Alsoufi',
+        full_name: 'Test3',
         avatar_url: null,
         city: 'Dammam',
         latitude: 26.4207,

@@ -26,8 +26,17 @@
   "clearAll": "مسح الكل",
   "apply": "تطبيق",
   "reset": "إعادة تعيين",
+  "loginForNotifications": "تسجيل الدخول",
+  "loginForNotificationsMessage": "تسجيل الدخول لاستلام الاشعارات",
+  "clearAllNotifications": "مسح الكل",
+  "clearAllNotificationsConfirm": "هل أنت متأكد من رغبتك في مسح جميع الاشعارات؟",
+  "addedToCart": "تم الاضافة للسلة",
+  "noProductsFound": "لا يوجد منتجات",
+  "priceHighToLow": "السعر: من الأعلى للأقل",
+  "priceLowToHigh": "السعر: من الاقل الى الاعلى",
   "auth": {
     "locationInfoMessage": "هذا موقعك الشخصي بصفتك عميل و ليس صاحب مشروع",
+    "pickYourLocation": "اختر موقعك",
     "login": "تسجيل الدخول",
     "register": "إنشاء حساب",
     "logout": "تسجيل الخروج",
@@ -89,7 +98,16 @@
     "passwordChangedSuccess": "تم تغيير كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول باستخدام كلمة المرور الجديدة.",
     "locationSharing": "مشاركة الموقع",
     "yourLocation": "موقعي",
-    "locationSharingHint": "يساعد في ايجاد المشاريع القريبة"
+    "locationSharingHint": "يساعد في ايجاد المشاريع القريبة",
+    "verifyYourEmail": "تحقق من بريدك الإلكتروني",
+    "verificationCodeSentTo": "لقد أرسلنا رمز التحقق إلى",
+    "verificationCode": "رمز التحقق",
+    "enter6DigitCode": "أدخل الرمز المكون من 6 أرقام",
+    "verify": "تحقق",
+    "resendEmail": "إعادة إرسال البريد",
+    "verificationEmailSent": "تم إرسال بريد التحقق بنجاح",
+    "enterVerificationCode": "الرجاء إدخال رمز التحقق",
+    "emailVerifiedSuccess": "تم التحقق من البريد الإلكتروني بنجاح"
   },
   "common": {
     "skip": "تخطي",
@@ -104,6 +122,7 @@
     "more": "المزيد",
     "cancel": "إلغاء",
     "save": "حفظ",
+    "optional": "اختياري",
     "delete": "حذف",
     "edit": "تعديل",
     "done": "تم",
@@ -116,7 +135,10 @@
     "apply": "تطبيق",
     "reset": "إعادة تعيين",
     "searchPlaceholder": "ابحث عن منتجات أو مشاريع...",
-    "noProducts": "لا توجد منتجات"
+    "searchPlaceholder2": "ابحث عن منتجات...",
+    "searchPlaceholder3": "ابحث عن مشاريع...",
+    "noProducts": "لا توجد منتجات",
+    "products": "منتجاتي"
   },
   "categories": "التصنيفات",
   "allCategories": "جميع التصنيفات",
@@ -131,6 +153,7 @@
   "browseProducts": "تصفح المنتجات",
   "reloadCategories": "إعادة تحميل التصنيفات",
   "featuredProducts": "منتجات مميزة",
+  "allProjects": "جميع المشاريع",
   "nearbyProjects": "مشاريع قريبة منك",
   "searchPlaceholder": "ابحث عن منتجات أو مشاريع...",
   "recentSearches": "عمليات البحث الأخيرة",
@@ -274,6 +297,7 @@
     "button": "استكشف الآن"
   },
   "project": {
+    "noProjectsFound": "لا توجد مشاريع",
     "noProjectTitle": "ليس لديك مشروع بعد",
     "noProjectSubtitle": "أنشئ مشروعك الآن وابدأ ببيع منتجاتك",
     "createProject": "إنشاء مشروع",
@@ -303,7 +327,8 @@
     "selectedLocation": "الموقع المحدد",
     "locationUpdated": "تم تحديث الموقع بنجاح",
     "closed": "مغلق",
-    "pendingMessage": "مشروعك قيد المراجعة حالياً من قبل الإدارة. سيتم إشعارك فور الموافقة عليه."
+    "pendingMessage": "مشروعك قيد المراجعة حالياً من قبل الإدارة. سيتم إشعارك فور الموافقة عليه.",
+    "addCoverImage": "إضافة صورة الغلاف"
   },
   "days": {
     "monday": "الإثنين",
@@ -402,5 +427,6 @@
     "title": "الاشعارات",
     "noNotifications": "لا توجد اشعارات",
     "noNotificationsMessage": "لم تستلم اشعارات بعد"
-  }
+  },
+  "submitRequest": "إرسال طلب"
 }

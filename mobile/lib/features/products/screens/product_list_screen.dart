@@ -52,6 +52,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
   double? _maxPrice;
   double? _minRating;
   String _searchQuery = '';
+  String? _selectedStatus; // null = 'all' for owner
 
   @override
   void initState() {
@@ -84,21 +85,10 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
 
   Future<void> _loadCategoryInfo() async {
     final categoriesState = ref.read(categoriesStateProvider);
+    final categoryId = widget.categoryId;
+    if (categoryId == null) return;
 
-    // Find the category by ID
-    Category? findCategory(List<Category> categories, int id) {
-      for (final cat in categories) {
-        if (cat.id == id) return cat;
-        if (cat.hasChildren) {
-          final found = findCategory(cat.children, id);
-          if (found != null) return found;
-        }
-      }
-      return null;
-    }
-
-    final category =
-        findCategory(categoriesState.categories, widget.categoryId!);
+    final category = categoriesState.findById(categoryId);
 
     if (category != null) {
       setState(() {
@@ -108,10 +98,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
           _subcategories = category.children;
         } else {
           // This is a subcategory - find parent
-          final parent = findCategory(
-            categoriesState.categories,
-            category.parentId!,
-          );
+          final parent = categoriesState.findParent(category.id);
           _parentCategory = parent;
           _subcategories = parent?.children ?? [];
           _selectedSubcategoryId = category.id;
@@ -132,10 +119,11 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
       final response = await repository.getProducts(
         page: 1,
         limit: 20,
-        categoryId: _selectedSubcategoryId ?? widget.categoryId,
+        categoryId:
+            _selectedSubcategoryId ?? _parentCategory?.id ?? widget.categoryId,
         projectId: widget.projectId,
         search: _searchQuery.isEmpty ? null : _searchQuery,
-        status: widget.isOwner ? 'all' : 'approved',
+        status: widget.isOwner ? (_selectedStatus ?? 'all') : 'approved',
         sort: _sortBy,
         minPrice: _minPrice,
         maxPrice: _maxPrice,
@@ -170,7 +158,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
         categoryId: _selectedSubcategoryId ?? widget.categoryId,
         projectId: widget.projectId,
         search: _searchQuery.isEmpty ? null : _searchQuery,
-        status: widget.isOwner ? 'all' : 'approved',
+        status: widget.isOwner ? (_selectedStatus ?? 'all') : 'approved',
         sort: _sortBy,
         minPrice: _minPrice,
         maxPrice: _maxPrice,
@@ -194,6 +182,30 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
       _selectedSubcategoryId = subcategoryId;
     });
     _loadProducts();
+  }
+
+  Widget _buildStatusChip(String? status, String label, bool isRtl) {
+    final isSelected = _selectedStatus == status;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) {
+        setState(() {
+          _selectedStatus = status;
+        });
+        _loadProducts();
+      },
+      backgroundColor: AppColors.surfaceVariant,
+      selectedColor: AppColors.primary.withOpacity(0.2),
+      labelStyle: TextStyle(
+        color: isSelected ? AppColors.primary : AppColors.textSecondary,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      ),
+      side: BorderSide(
+        color: isSelected ? AppColors.primary : Colors.transparent,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    );
   }
 
   Future<void> _navigateToAddProduct() async {
@@ -256,18 +268,20 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
               onPressed: () => Navigator.pop(context),
             ),
             actions: [
-              IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.filter_list_rounded,
-                      color: Colors.white, size: 18),
-                ),
-                onPressed: _showFilterSheet,
-              ),
+              widget.isOwner
+                  ? Container()
+                  : IconButton(
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.filter_list_rounded,
+                            color: Colors.white, size: 18),
+                      ),
+                      onPressed: _showFilterSheet,
+                    )
             ],
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(70),
@@ -275,7 +289,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                 child: SearchTextField(
                   controller: _searchController,
-                  hint: l10n.tr('searchPlaceholder'),
+                  hint: l10n.tr('common.searchPlaceholder2'),
                   onChanged: (value) {
                     _searchQuery = value;
                     // Debounce could be added here
@@ -348,8 +362,42 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
             ),
           ),
 
+          // Owner status filter chips
+          if (widget.isOwner)
+            SliverToBoxAdapter(
+              child: Container(
+                color: AppColors.surface,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 44,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        children: [
+                          _buildStatusChip(null, isRtl ? 'الكل' : 'All', isRtl),
+                          const SizedBox(width: 10),
+                          _buildStatusChip('pending',
+                              isRtl ? 'قيد المراجعة' : 'Pending', isRtl),
+                          const SizedBox(width: 10),
+                          _buildStatusChip(
+                              'approved', isRtl ? 'مقبول' : 'Approved', isRtl),
+                          const SizedBox(width: 10),
+                          _buildStatusChip(
+                              'rejected', isRtl ? 'مرفوض' : 'Rejected', isRtl),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Divider(height: 1),
+                  ],
+                ),
+              ),
+            ),
+
           // Subcategory chips
-          if (_subcategories.isNotEmpty)
+          if (_subcategories.isNotEmpty && !widget.isOwner)
             SliverToBoxAdapter(
               child: Container(
                 color: AppColors.surface,
@@ -645,7 +693,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                     children: [
                       Flexible(
                         child: Text(
-                          '${product.basePrice.toStringAsFixed(0)} ${isRtl ? 'ر.س' : 'SAR'}',
+                          '${product.basePrice.toStringAsFixed(0)} ${isRtl ? 'ر.ي' : 'YER'}',
                           style:
                               Theme.of(context).textTheme.titleSmall?.copyWith(
                                     color: AppColors.primary,
@@ -831,7 +879,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                             child: TextField(
                               decoration: InputDecoration(
                                 hintText: l10n.tr('min'),
-                                prefixText: 'SAR ',
+                                prefixText: 'YER ',
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -850,7 +898,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                             child: TextField(
                               decoration: InputDecoration(
                                 hintText: l10n.tr('max'),
-                                prefixText: 'SAR ',
+                                prefixText: 'YER ',
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),

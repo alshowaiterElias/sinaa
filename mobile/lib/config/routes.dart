@@ -9,6 +9,7 @@ import '../features/auth/screens/register_screen.dart';
 import '../features/auth/screens/project_owner_register_screen.dart';
 import '../features/auth/screens/forgot_password_screen.dart';
 import '../features/auth/screens/reset_password_screen.dart';
+import '../features/auth/screens/verification_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/projects/screens/project_list_screen.dart';
 import '../features/search/screens/search_screen.dart';
@@ -56,6 +57,7 @@ class Routes {
   static const String registerProjectOwner = '/register/project-owner';
   static const String forgotPassword = '/forgot-password';
   static const String resetPassword = '/reset-password';
+  static const String verificationWaiting = '/verification-waiting';
   static const String home = '/home';
   static const String search = '/search';
   static const String cart = '/cart';
@@ -130,7 +132,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           location == Routes.register ||
           location == Routes.registerProjectOwner ||
           location == Routes.forgotPassword ||
-          location.startsWith(Routes.resetPassword);
+          location.startsWith(Routes.resetPassword) ||
+          location == Routes.verificationWaiting;
 
       // Protected routes that require login
       final protectedRoutes = [
@@ -144,6 +147,24 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       final isProtectedRoute =
           protectedRoutes.any((route) => location.startsWith(route));
+
+      // Check verification status
+      if (isLoggedIn) {
+        final isVerified = authState.user?.isVerified ?? false;
+
+        // If not verified, force to verification screen
+        if (!isVerified) {
+          if (location != Routes.verificationWaiting) {
+            return Routes.verificationWaiting;
+          }
+          return null;
+        }
+
+        // If verified and on verification screen, go home
+        if (location == Routes.verificationWaiting) {
+          return Routes.home;
+        }
+      }
 
       // Redirect to login if accessing protected route without auth
       if (!isLoggedIn && isProtectedRoute) {
@@ -191,7 +212,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.resetPassword,
         builder: (context, state) {
           final token = state.uri.queryParameters['token'] ?? '';
-          return ResetPasswordScreen(token: token);
+          final email = state.uri.queryParameters['email'] ?? '';
+          return ResetPasswordScreen(token: token, email: email);
+        },
+      ),
+      GoRoute(
+        path: Routes.verificationWaiting,
+        builder: (context, state) {
+          final email = state.extra as String? ??
+              ref.read(authStateProvider).user?.email ??
+              '';
+          return VerificationWaitingScreen(email: email);
         },
       ),
 

@@ -96,7 +96,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
           );
 
       if (mounted) {
-        context.go(Routes.home);
+        context.go(Routes.verificationWaiting,
+            extra: _emailController.text.trim());
       }
     } catch (e) {
       if (mounted) {
@@ -236,7 +237,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                                 CustomTextField(
                                   controller: _phoneController,
                                   label: l10n.tr('auth.phoneOptional'),
-                                  hint: '05xxxxxxxx',
+                                  hint: '7xxxxxxxx',
                                   keyboardType: TextInputType.phone,
                                   prefixIcon: Icons.phone_outlined,
                                   validator: (value) => Validators.saudiPhone(

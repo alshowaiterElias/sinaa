@@ -16,7 +16,7 @@ import {
 import { ERROR_CODES, USER_ROLES, PROJECT_STATUS } from '../config/constants';
 import { asyncHandler } from '../middleware/errorHandler';
 import sequelize from '../config/database';
-import { sendVerificationEmail } from '../services/email.service';
+import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.service';
 import crypto from 'crypto';
 import { logger } from '../utils/logger';
 
@@ -502,17 +502,28 @@ export const forgotPassword = asyncHandler(
       return sendSuccess(
         res,
         null,
-        'If an account exists with this email, a reset link has been sent'
+        'If an account exists with this email, a reset code has been sent'
       );
     }
 
-    // TODO: Generate reset token and send email
-    // For now, just return success message
+    // Generate 6-digit reset token
+    const resetToken = crypto.randomInt(100000, 999999).toString();
+    const resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await user.update({
+      verificationToken: resetToken,
+      verificationTokenExpires: resetTokenExpires,
+    });
+
+    // Send reset email
+    await sendPasswordResetEmail(user.email, resetToken);
+
+    logger.info(`[FORGOT_PASSWORD] Reset code sent to: ${email}`);
 
     return sendSuccess(
       res,
       null,
-      'If an account exists with this email, a reset link has been sent'
+      'If an account exists with this email, a reset code has been sent'
     );
   }
 );
@@ -523,17 +534,37 @@ export const forgotPassword = asyncHandler(
  */
 export const resetPassword = asyncHandler(
   async (req: Request, res: Response) => {
-    const { token, password } = req.body;
+    const { email, token, password } = req.body;
 
-    // TODO: Implement password reset token verification
-    // For now, return not implemented
+    if (!email || !token || !password) {
+      return sendError(res, ERROR_CODES.VALIDATION_ERROR, 'Email, token and password are required', 400);
+    }
 
-    sendError(
-      res,
-      ERROR_CODES.BAD_REQUEST,
-      'Password reset is not implemented yet',
-      501
-    );
+    // Find user by email and token
+    const user = await User.findOne({ where: { email, verificationToken: token } });
+
+    if (!user) {
+      return sendError(res, ERROR_CODES.VALIDATION_ERROR, 'Invalid reset code', 400);
+    }
+
+    // Check expiration
+    if (user.verificationTokenExpires && user.verificationTokenExpires < new Date()) {
+      return sendError(res, ERROR_CODES.VALIDATION_ERROR, 'Reset code has expired', 400);
+    }
+
+    // Hash new password and update
+    const passwordHash = await hashPassword(password);
+
+    await user.update({
+      passwordHash,
+      verificationToken: null,
+      verificationTokenExpires: null,
+      refreshToken: null, // Logout all devices
+    });
+
+    logger.info(`[RESET_PASSWORD] Password reset successful for user: ${user.id}`);
+
+    return sendSuccess(res, null, 'Password reset successfully');
   }
 );
 

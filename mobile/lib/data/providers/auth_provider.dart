@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/storage/local_storage.dart';
@@ -296,6 +298,44 @@ class AuthNotifier extends Notifier<AuthState> {
       await _authRepository.forgotPassword(email);
       state = state.copyWith(isLoading: false);
     } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
+      rethrow;
+    }
+  }
+
+  /// Verify email
+  Future<void> verifyEmail(String token) async {
+    debugPrint('AuthNotifier: Verifying email with token: $token');
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      await _authRepository.verifyEmail(token);
+      debugPrint('AuthNotifier: Email verified successfully');
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      debugPrint('AuthNotifier: Email verification failed: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
+      rethrow;
+    }
+  }
+
+  /// Resend verification email
+  Future<void> resendVerificationEmail(String email) async {
+    debugPrint('AuthNotifier: Resending verification email to: $email');
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      await _authRepository.resendVerificationEmail(email);
+      debugPrint('AuthNotifier: Verification email sent successfully');
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      debugPrint('AuthNotifier: Resend verification email failed: $e');
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),

@@ -86,6 +86,15 @@ class ChatRepository {
       throw ApiException.fromDioError(e);
     }
   }
+
+  /// Delete conversation (soft delete for current user only)
+  Future<void> deleteConversation(int conversationId) async {
+    try {
+      await _dio.delete(ApiEndpoints.conversation(conversationId));
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
 }
 
 /// Provider for chat repository

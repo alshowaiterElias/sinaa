@@ -124,6 +124,25 @@ class UsersNotifier extends StateNotifier<UsersState> {
       loadUsers();
     }
   }
+
+  Future<bool> createAdmin({
+    required String email,
+    required String password,
+    required String fullName,
+  }) async {
+    try {
+      await _repository.createAdmin(
+        email: email,
+        password: password,
+        fullName: fullName,
+      );
+      loadUsers(refresh: true);
+      return true;
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return false;
+    }
+  }
 }
 
 final usersProvider = StateNotifierProvider<UsersNotifier, UsersState>((ref) {

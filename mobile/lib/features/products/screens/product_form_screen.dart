@@ -302,10 +302,16 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
 
       final productData = {
         'categoryId': _selectedCategoryId,
-        'name': _nameController.text.trim(),
+        'name': _nameController.text.trim().isEmpty
+            ? null
+            : _nameController.text.trim(),
         'nameAr': _nameArController.text.trim(),
-        'description': _descriptionController.text.trim(),
-        'descriptionAr': _descriptionArController.text.trim(),
+        'description': _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+        'descriptionAr': _descriptionArController.text.trim().isEmpty
+            ? null
+            : _descriptionArController.text.trim(),
         'basePrice': double.parse(_priceController.text),
         'quantity': int.parse(_quantityController.text),
         'isAvailable': _isAvailable,
@@ -857,20 +863,25 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
           ),
           const SizedBox(height: 20),
           _buildTextField(
-            controller: _nameController,
-            label: isRtl ? 'اسم المنتج (English)' : 'Product Name (English)',
-            icon: Icons.abc_rounded,
-          ),
-          const SizedBox(height: 16),
-          _buildTextField(
             controller: _nameArController,
             label: isRtl ? 'اسم المنتج (عربي)' : 'Product Name (Arabic)',
             icon: Icons.translate_rounded,
           ),
           const SizedBox(height: 16),
           _buildTextField(
+            controller: _nameController,
+            label: isRtl
+                ? 'اسم المنتج (English) اختياري'
+                : 'Product Name (English) optional',
+            icon: Icons.abc_rounded,
+            isRequired: false,
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(
             controller: _descriptionController,
-            label: isRtl ? 'الوصف (English)' : 'Description (English)',
+            label: isRtl
+                ? 'الوصف (English) اختياري'
+                : 'Description (English) optional',
             icon: Icons.description_outlined,
             maxLines: 3,
             isRequired: false,
@@ -1135,21 +1146,20 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen>
                 flex: 2,
                 child: _buildTextField(
                   controller: _priceController,
-                  label: isRtl ? 'السعر (SAR)' : 'Price (SAR)',
+                  label: isRtl ? 'السعر (ر.ي)' : 'Price (YR)',
                   icon: Icons.monetization_on_outlined,
                   keyboardType: TextInputType.number,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildTextField(
-                  controller: _quantityController,
-                  label: isRtl ? 'الكمية' : 'Qty',
-                  icon: Icons.inventory_2_outlined,
-                  keyboardType: TextInputType.number,
-                ),
-              ),
             ],
+          ),
+          const SizedBox(height: 12),
+
+          _buildTextField(
+            controller: _quantityController,
+            label: isRtl ? 'الكمية' : 'Qty',
+            icon: Icons.inventory_2_outlined,
+            keyboardType: TextInputType.number,
           ),
           const SizedBox(height: 16),
           // Info box explaining quantity behavior

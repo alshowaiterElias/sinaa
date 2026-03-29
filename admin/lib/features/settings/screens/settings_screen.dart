@@ -16,7 +16,7 @@ class SettingsScreen extends StatelessWidget {
             style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height: 24),
-          
+
           // General settings
           Card(
             child: Padding(
@@ -29,7 +29,7 @@ class SettingsScreen extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 16),
-                  
+
                   _buildSettingRow(
                     context,
                     'فترة التأكيد التلقائي',
@@ -39,14 +39,12 @@ class SettingsScreen extends StatelessWidget {
                       child: TextFormField(
                         initialValue: '7',
                         textAlign: TextAlign.center,
-                        decoration: const InputDecoration(
-                          suffixText: 'يوم',
-                        ),
+                        decoration: const InputDecoration(suffixText: 'يوم'),
                       ),
                     ),
                   ),
                   const Divider(height: 32),
-                  
+
                   _buildSettingRow(
                     context,
                     'نطاق البحث الافتراضي',
@@ -56,14 +54,12 @@ class SettingsScreen extends StatelessWidget {
                       child: TextFormField(
                         initialValue: '50',
                         textAlign: TextAlign.center,
-                        decoration: const InputDecoration(
-                          suffixText: 'كم',
-                        ),
+                        decoration: const InputDecoration(suffixText: 'كم'),
                       ),
                     ),
                   ),
                   const Divider(height: 32),
-                  
+
                   _buildSettingRow(
                     context,
                     'حد حجم الصورة',
@@ -73,9 +69,7 @@ class SettingsScreen extends StatelessWidget {
                       child: TextFormField(
                         initialValue: '5',
                         textAlign: TextAlign.center,
-                        decoration: const InputDecoration(
-                          suffixText: 'MB',
-                        ),
+                        decoration: const InputDecoration(suffixText: 'MB'),
                       ),
                     ),
                   ),
@@ -84,89 +78,89 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          
-          // Content policies
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'سياسات المحتوى',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  _buildSwitchRow(
-                    context,
-                    'مراجعة المشاريع الجديدة',
-                    'طلب موافقة المدير على المشاريع الجديدة',
-                    true,
-                  ),
-                  const Divider(height: 16),
-                  
-                  _buildSwitchRow(
-                    context,
-                    'مراجعة المنتجات الجديدة',
-                    'طلب موافقة المدير على المنتجات الجديدة',
-                    true,
-                  ),
-                  const Divider(height: 16),
-                  
-                  _buildSwitchRow(
-                    context,
-                    'مراجعة التقييمات',
-                    'طلب موافقة المدير على التقييمات قبل نشرها',
-                    false,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          
+
+          // // Content policies
+          // Card(
+          //   child: Padding(
+          //     padding: const EdgeInsets.all(20),
+          //     child: Column(
+          //       crossAxisAlignment: CrossAxisAlignment.start,
+          //       children: [
+          //         Text(
+          //           'سياسات المحتوى',
+          //           style: Theme.of(context).textTheme.titleLarge,
+          //         ),
+          //         const SizedBox(height: 16),
+
+          //         _buildSwitchRow(
+          //           context,
+          //           'مراجعة المشاريع الجديدة',
+          //           'طلب موافقة المدير على المشاريع الجديدة',
+          //           true,
+          //         ),
+          //         const Divider(height: 16),
+
+          //         _buildSwitchRow(
+          //           context,
+          //           'مراجعة المنتجات الجديدة',
+          //           'طلب موافقة المدير على المنتجات الجديدة',
+          //           true,
+          //         ),
+          //         // const Divider(height: 16),
+
+          //         // _buildSwitchRow(
+          //         //   context,
+          //         //   'مراجعة التقييمات',
+          //         //   'طلب موافقة المدير على التقييمات قبل نشرها',
+          //         //   false,
+          //         // ),
+          //       ],
+          //     ),
+          //   ),
+          // ),
+          // const SizedBox(height: 16),
+
           // Notifications
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'إشعارات المدير',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  _buildSwitchRow(
-                    context,
-                    'مشروع جديد في الانتظار',
-                    'إرسال إشعار عند تسجيل مشروع جديد',
-                    true,
-                  ),
-                  const Divider(height: 16),
-                  
-                  _buildSwitchRow(
-                    context,
-                    'تذكرة دعم جديدة',
-                    'إرسال إشعار عند فتح تذكرة دعم جديدة',
-                    true,
-                  ),
-                  const Divider(height: 16),
-                  
-                  _buildSwitchRow(
-                    context,
-                    'نزاع جديد',
-                    'إرسال إشعار عند فتح نزاع على معاملة',
-                    true,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          
+          // Card(
+          //   child: Padding(
+          //     padding: const EdgeInsets.all(20),
+          //     child: Column(
+          //       crossAxisAlignment: CrossAxisAlignment.start,
+          //       children: [
+          //         Text(
+          //           'إشعارات المدير',
+          //           style: Theme.of(context).textTheme.titleLarge,
+          //         ),
+          //         const SizedBox(height: 16),
+
+          //         _buildSwitchRow(
+          //           context,
+          //           'مشروع جديد في الانتظار',
+          //           'إرسال إشعار عند تسجيل مشروع جديد',
+          //           true,
+          //         ),
+          //         const Divider(height: 16),
+
+          //         _buildSwitchRow(
+          //           context,
+          //           'تذكرة دعم جديدة',
+          //           'إرسال إشعار عند فتح تذكرة دعم جديدة',
+          //           true,
+          //         ),
+          //         const Divider(height: 16),
+
+          //         _buildSwitchRow(
+          //           context,
+          //           'نزاع جديد',
+          //           'إرسال إشعار عند فتح نزاع على معاملة',
+          //           true,
+          //         ),
+          //       ],
+          //     ),
+          //   ),
+          // ),
+          // const SizedBox(height: 24),
+
           // Save button
           Align(
             alignment: AlignmentDirectional.centerEnd,
@@ -193,15 +187,9 @@ class SettingsScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+              Text(title, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
             ],
           ),
         ),
@@ -222,15 +210,9 @@ class SettingsScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+              Text(title, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
             ],
           ),
         ),
@@ -243,4 +225,3 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 }
-

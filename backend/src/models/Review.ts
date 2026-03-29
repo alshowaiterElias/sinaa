@@ -15,13 +15,16 @@ export interface ReviewAttributes {
     transactionId: number;
     rating: number;
     comment: string | null;
+    ownerReply: string | null;
+    ownerReplyAt: Date | null;
     status: ReviewStatus;
     createdAt: Date;
+    updatedAt: Date | null;
 }
 
 // Attributes for creation
 export interface ReviewCreationAttributes
-    extends Optional<ReviewAttributes, 'id' | 'comment' | 'status' | 'createdAt'> { }
+    extends Optional<ReviewAttributes, 'id' | 'comment' | 'ownerReply' | 'ownerReplyAt' | 'status' | 'createdAt' | 'updatedAt'> { }
 
 // Review model class
 class Review
@@ -33,8 +36,11 @@ class Review
     public transactionId!: number;
     public rating!: number;
     public comment!: string | null;
+    public ownerReply!: string | null;
+    public ownerReplyAt!: Date | null;
     public status!: ReviewStatus;
     public readonly createdAt!: Date;
+    public updatedAt!: Date | null;
 
     // Associations
     public readonly user?: User;
@@ -98,6 +104,16 @@ Review.init(
             type: DataTypes.TEXT,
             allowNull: true,
         },
+        ownerReply: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+            field: 'owner_reply',
+        },
+        ownerReplyAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            field: 'owner_reply_at',
+        },
         status: {
             type: DataTypes.ENUM('pending', 'approved', 'rejected'),
             defaultValue: 'approved',
@@ -106,6 +122,11 @@ Review.init(
             type: DataTypes.DATE,
             field: 'created_at',
             defaultValue: DataTypes.NOW,
+        },
+        updatedAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            field: 'updated_at',
         },
     },
     {

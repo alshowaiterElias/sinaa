@@ -53,12 +53,11 @@ class _UsersListScreenState extends ConsumerState<UsersListScreen> {
                 'إدارة المستخدمين',
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
-              // Add User button removed or can be kept if needed
-              // ElevatedButton.icon(
-              //   onPressed: () {},
-              //   icon: const Icon(Icons.add),
-              //   label: const Text('إضافة مستخدم'),
-              // ),
+              ElevatedButton.icon(
+                onPressed: () => _showCreateAdminDialog(context),
+                icon: const Icon(Icons.person_add),
+                label: const Text('إضافة مدير'),
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -293,6 +292,117 @@ class _UsersListScreenState extends ConsumerState<UsersListScreen> {
           color: isActive ? AdminColors.approvedText : AdminColors.rejectedText,
           fontSize: 12,
           fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  void _showCreateAdminDialog(BuildContext context) {
+    final formKey = GlobalKey<FormState>();
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
+    final fullNameController = TextEditingController();
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('إنشاء حساب مدير'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: fullNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'الاسم الكامل',
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'مطلوب' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'البريد الإلكتروني',
+                    prefixIcon: Icon(Icons.email),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'مطلوب';
+                    if (!v.contains('@')) return 'بريد إلكتروني غير صالح';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: passwordController,
+                  decoration: const InputDecoration(
+                    labelText: 'كلمة المرور',
+                    prefixIcon: Icon(Icons.lock),
+                  ),
+                  obscureText: true,
+                  validator: (v) {
+                    if (v == null || v.length < 6) {
+                      return 'يجب أن تكون 6 أحرف على الأقل';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isLoading ? null : () => Navigator.pop(dialogContext),
+              child: const Text('إلغاء'),
+            ),
+            ElevatedButton(
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      if (!formKey.currentState!.validate()) return;
+                      setDialogState(() => isLoading = true);
+
+                      final success =
+                          await ref.read(usersProvider.notifier).createAdmin(
+                                email: emailController.text.trim(),
+                                password: passwordController.text,
+                                fullName: fullNameController.text.trim(),
+                              );
+
+                      if (!context.mounted) return;
+
+                      if (success) {
+                        Navigator.pop(dialogContext);
+                        ScaffoldMessenger.of(this.context).showSnackBar(
+                          const SnackBar(
+                            content: Text('تم إنشاء حساب المدير بنجاح'),
+                            backgroundColor: AdminColors.success,
+                          ),
+                        );
+                      } else {
+                        setDialogState(() => isLoading = false);
+                        ScaffoldMessenger.of(this.context).showSnackBar(
+                          const SnackBar(
+                            content: Text('فشل إنشاء حساب المدير'),
+                            backgroundColor: AdminColors.error,
+                          ),
+                        );
+                      }
+                    },
+              child: isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('إنشاء'),
+            ),
+          ],
         ),
       ),
     );
