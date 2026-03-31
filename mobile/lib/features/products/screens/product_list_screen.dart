@@ -33,6 +33,8 @@ class ProductListScreen extends ConsumerStatefulWidget {
 
 class _ProductListScreenState extends ConsumerState<ProductListScreen> {
   List<Product> _products = [];
+  List<Product> _featuredProducts = [];
+  bool _showFeatured = true;
   bool _isLoading = true;
   bool _isLoadingMore = false;
   String? _error;
@@ -129,6 +131,13 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
         maxPrice: _maxPrice,
         minRating: _minRating,
       );
+
+      for (var product in response.products) {
+        if (product.isFeatured) {
+          _featuredProducts.add(product);
+        }
+      }
+
       setState(() {
         _products = response.products;
         _hasMore = response.pagination.hasMore;
@@ -492,6 +501,61 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
               ),
             ),
 
+          if (!widget.isOwner)
+            SliverToBoxAdapter(
+              child: Container(
+                margin: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: FilterChip(
+                          label: Center(
+                            child: Text(
+                              "Featured",
+                              style: TextStyle(
+                                  color: _showFeatured
+                                      ? AppColors.infoLight
+                                      : AppColors.textSecondary),
+                            ),
+                          ),
+                          selected: _showFeatured,
+                          onSelected: (value) {
+                            setState(() {
+                              _showFeatured = true;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: FilterChip(
+                            label: Center(
+                              child: Text(
+                                "All",
+                                style: TextStyle(
+                                    color: !_showFeatured
+                                        ? AppColors.infoLight
+                                        : AppColors.textSecondary),
+                              ),
+                            ),
+                            selected: !_showFeatured,
+                            onSelected: (value) {
+                              setState(() {
+                                _showFeatured = false;
+                              });
+                            }),
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            ),
+
           // Products grid
           _buildProductsSliver(),
         ],
@@ -592,10 +656,19 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                   : const SizedBox();
             }
 
-            final product = _products[index];
+            final Product product;
+
+            if (!_showFeatured) {
+              product = _products[index];
+            } else {
+              product = _featuredProducts[index];
+            }
+
             return _buildProductCard(context, product);
           },
-          childCount: _products.length + (_hasMore ? 1 : 0),
+          childCount: !_showFeatured
+              ? _products.length + (_hasMore ? 1 : 0)
+              : _featuredProducts.length + (_hasMore ? 1 : 0),
         ),
       ),
     );

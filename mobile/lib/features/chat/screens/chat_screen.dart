@@ -130,8 +130,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     ? Image.network(
                         ApiEndpoints.imageUrl(avatarUrl),
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.store, color: AppColors.textTertiary),
+                        errorBuilder: (_, __, ___) => const Icon(Icons.store,
+                            color: AppColors.textTertiary),
                       )
                     : const Icon(Icons.store, color: AppColors.textTertiary),
               ),
@@ -269,7 +269,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
-            _formatDate(date),
+            _formatDate((date.add(Duration(hours: 3)))),
             style: TextStyle(
               fontSize: 12,
               color: AppColors.textSecondary,

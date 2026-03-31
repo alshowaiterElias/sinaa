@@ -179,7 +179,7 @@ export const initiateTransaction = async (req: Request, res: Response, next: Nex
 
         // Update conversation's lastMessageAt
         await Conversation.update(
-            { lastMessageAt: new Date() },
+            { lastMessageAt: new Date(), deletedByUser1: false, deletedByUser2: false },
             { where: { id: conversationId } }
         );
 

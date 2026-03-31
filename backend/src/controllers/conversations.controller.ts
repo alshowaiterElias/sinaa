@@ -326,14 +326,17 @@ export const sendMessage = async (req: Request, res: Response, next: NextFunctio
             senderId: userId,
             content: content.trim(),
             messageType,
+            createdAt: new Date()
         });
 
         // Update conversation
         conversation.lastMessageAt = new Date();
         // Reset delete flags so conversation reappears for both users
-        conversation.deletedByUser1 = false;
-        conversation.deletedByUser2 = false;
-        await conversation.save();
+        logger.info(`Resetting delete flags for conversation ${id}`);
+        await Conversation.update(
+            { deletedByUser1: false, deletedByUser2: false, lastMessageAt: new Date() },
+            { where: { id: conversation.id } }
+        );
 
         // Reload with sender
         await message.reload({

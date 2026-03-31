@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sinaa_mobile/data/models/user.dart';
 
 import '../../../config/theme.dart';
 import '../../../config/routes.dart';
@@ -36,15 +37,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
       // Load nearby projects using user location if available
       final user = ref.read(currentUserProvider);
-      if (user != null && user.hasLocation && user.locationSharingEnabled) {
-        ref.read(nearbyProjectsProvider.notifier).loadNearbyProjects(
-              lat: user.latitude!,
-              lon: user.longitude!,
-            );
-      } else {
-        // Fallback to regular projects list
-        ref.read(projectsStateProvider.notifier).loadProjects();
-      }
+      // if (user != null && user.hasLocation && user.locationSharingEnabled) {
+      //   ref.read(projectsStateProvider.notifier).loadProjects();
+      // } else {
+      //   // Fallback to regular projects list
+      ref.read(projectsStateProvider.notifier).loadProjects();
+      // }
 
       debugPrint(
           '[HOME] Loaded categories, projects, featured products, and notification count');
@@ -166,14 +164,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 const SizedBox(height: 32),
 
                 // Nearby projects - use location-based if available
-                _buildSectionHeader(context, l10n.tr('nearbyProjects'),
+                _buildSectionHeader(context, l10n.tr('nearbyProjects1'),
                     onSeeAll: () {
                   context.push(Routes.projectList);
                 }),
                 const SizedBox(height: 16),
-                hasUserLocation
-                    ? _buildNearbyProjectsWithDistance(context, nearbyState)
-                    : _buildNearbyProjects(context, projectsState),
+                _buildNearbyProjects(context, projectsState),
 
                 const SizedBox(height: 100),
               ],
@@ -767,8 +763,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildNearbyProjects(BuildContext context, projectsState) {
-    debugPrint(
-        '[HOME] Projects state: isLoading=${projectsState.isLoading}, count=${projectsState.projects.length}, error=${projectsState.error}');
     if (projectsState.isLoading && projectsState.projects.isEmpty) {
       return const SizedBox(
         height: 200,
@@ -790,8 +784,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
     }
 
+    // projectsState.projects.forEach((p) => print(p.ownerId));
     final projects = projectsState.projects.take(5).toList();
-
     return SizedBox(
       height: 300,
       child: ListView.builder(
@@ -800,8 +794,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         itemCount: projects.length,
         itemBuilder: (context, index) {
           final project = projects[index];
-          debugPrint(
-              '[HOME] Rendering project: ${project.name}, OwnerId: ${project.ownerId}');
+
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
             child: SizedBox(

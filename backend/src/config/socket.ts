@@ -151,7 +151,10 @@ export function initializeSocket(httpServer: HttpServer): Server {
 
                 // Update conversation last message time
                 conversation.lastMessageAt = new Date();
+                conversation.deletedByUser1 = false;
+                conversation.deletedByUser2 = false;
                 await conversation.save();
+                logger.info(`Conversation ${conversationId} updated ${conversation.deletedByUser1}`);
 
                 // Load sender info
                 await message.reload({

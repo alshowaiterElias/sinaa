@@ -44,7 +44,6 @@ class ProjectsRepository {
         ApiEndpoints.projects,
         queryParameters: queryParams,
       );
-
       final data = response.data['data'];
 
       // API returns data as array directly with pagination at root level

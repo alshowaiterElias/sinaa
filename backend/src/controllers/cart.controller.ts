@@ -9,6 +9,7 @@ import Project from '../models/Project';
 import Conversation from '../models/Conversation';
 import Message from '../models/Message';
 import { sendSuccess, sendError } from '../utils/helpers';
+import logger from '../utils/logger';
 
 /**
  * Get user's cart items grouped by project
@@ -317,7 +318,8 @@ export const sendInquiries = async (req: Request, res: Response, next: NextFunct
 
             // Generate inquiry message
             const messageContent = generateInquiryMessage(group.items, generalNote);
-
+            logger.info("hiiiiiii")
+            logger.info(Date());
             // Create message
             await Message.create(
                 {
@@ -325,12 +327,15 @@ export const sendInquiries = async (req: Request, res: Response, next: NextFunct
                     senderId: userId,
                     content: messageContent,
                     messageType: 'inquiry',
+                    createdAt: new Date(),
                 },
                 { transaction }
             );
 
             // Update conversation last message time
             conversation.lastMessageAt = new Date();
+            conversation.deletedByUser1 = false;
+            conversation.deletedByUser2 = false;
             await conversation.save({ transaction });
 
             conversationIds.push(conversation.id);

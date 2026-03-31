@@ -86,7 +86,7 @@ class ProjectsNotifier extends Notifier<ProjectsState> {
         search: state.searchQuery,
       );
 
-      debugPrint(
+      print(
           '[PROJECTS] Got ${response.projects.length} projects, totalPages: ${response.pagination.totalPages}');
       state = state.copyWith(
         projects: refresh

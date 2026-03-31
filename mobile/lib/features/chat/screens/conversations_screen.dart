@@ -39,6 +39,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
     }
 
     final conversationsState = ref.watch(conversationsProvider);
+    print(conversationsState.conversations);
     final currentUser = ref.watch(currentUserProvider);
     final isRtl = context.isRtl;
 
