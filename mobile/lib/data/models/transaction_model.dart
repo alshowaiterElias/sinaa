@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 enum TransactionStatus {
   all,
   pending,
-  confirmed,
+  preparing,
+  readyToDeliver,
+  delivered,
   disputed,
   cancelled;
 
@@ -12,8 +14,12 @@ enum TransactionStatus {
     switch (value?.toLowerCase()) {
       case 'pending':
         return TransactionStatus.pending;
-      case 'confirmed':
-        return TransactionStatus.confirmed;
+      case 'preparing':
+        return TransactionStatus.preparing;
+      case 'ready_to_deliver':
+        return TransactionStatus.readyToDeliver;
+      case 'delivered':
+        return TransactionStatus.delivered;
       case 'disputed':
         return TransactionStatus.disputed;
       case 'cancelled':
@@ -29,8 +35,12 @@ enum TransactionStatus {
         return 'all';
       case TransactionStatus.pending:
         return 'pending';
-      case TransactionStatus.confirmed:
-        return 'confirmed';
+      case TransactionStatus.preparing:
+        return 'preparing';
+      case TransactionStatus.readyToDeliver:
+        return 'ready_to_deliver';
+      case TransactionStatus.delivered:
+        return 'delivered';
       case TransactionStatus.disputed:
         return 'disputed';
       case TransactionStatus.cancelled:
@@ -44,8 +54,12 @@ enum TransactionStatus {
         return 'All';
       case TransactionStatus.pending:
         return 'Pending';
-      case TransactionStatus.confirmed:
-        return 'Confirmed';
+      case TransactionStatus.preparing:
+        return 'Preparing';
+      case TransactionStatus.readyToDeliver:
+        return 'Ready to Deliver';
+      case TransactionStatus.delivered:
+        return 'Delivered';
       case TransactionStatus.disputed:
         return 'Disputed';
       case TransactionStatus.cancelled:
@@ -59,8 +73,12 @@ enum TransactionStatus {
         return 'الكل';
       case TransactionStatus.pending:
         return 'قيد الانتظار';
-      case TransactionStatus.confirmed:
-        return 'مؤكد';
+      case TransactionStatus.preparing:
+        return 'قيد التجهيز';
+      case TransactionStatus.readyToDeliver:
+        return 'جاهز للتسليم';
+      case TransactionStatus.delivered:
+        return 'تم التسليم';
       case TransactionStatus.disputed:
         return 'متنازع عليه';
       case TransactionStatus.cancelled:
@@ -74,7 +92,11 @@ enum TransactionStatus {
         return Colors.grey;
       case TransactionStatus.pending:
         return Colors.orange;
-      case TransactionStatus.confirmed:
+      case TransactionStatus.preparing:
+        return Colors.blue;
+      case TransactionStatus.readyToDeliver:
+        return Colors.teal;
+      case TransactionStatus.delivered:
         return Colors.green;
       case TransactionStatus.disputed:
         return Colors.red;
@@ -153,12 +175,7 @@ class Transaction {
   final int conversationId;
   final int? productId;
   final int initiatedBy;
-  final bool customerConfirmed;
-  final bool sellerConfirmed;
-  final DateTime? customerConfirmedAt;
-  final DateTime? sellerConfirmedAt;
   final TransactionStatus status;
-  final DateTime autoConfirmAt;
   final DateTime createdAt;
   final TransactionUser? initiator;
   final TransactionProduct? product;
@@ -171,12 +188,7 @@ class Transaction {
     required this.conversationId,
     this.productId,
     required this.initiatedBy,
-    required this.customerConfirmed,
-    required this.sellerConfirmed,
-    this.customerConfirmedAt,
-    this.sellerConfirmedAt,
     required this.status,
-    required this.autoConfirmAt,
     required this.createdAt,
     this.initiator,
     this.product,
@@ -196,23 +208,7 @@ class Transaction {
       conversationId: json['conversationId'] ?? json['conversation_id'] as int,
       productId: json['productId'] ?? json['product_id'],
       initiatedBy: json['initiatedBy'] ?? json['initiated_by'] as int,
-      customerConfirmed:
-          json['customerConfirmed'] ?? json['customer_confirmed'] ?? false,
-      sellerConfirmed:
-          json['sellerConfirmed'] ?? json['seller_confirmed'] ?? false,
-      customerConfirmedAt: json['customerConfirmedAt'] != null ||
-              json['customer_confirmed_at'] != null
-          ? DateTime.parse(
-              json['customerConfirmedAt'] ?? json['customer_confirmed_at'])
-          : null,
-      sellerConfirmedAt: json['sellerConfirmedAt'] != null ||
-              json['seller_confirmed_at'] != null
-          ? DateTime.parse(
-              json['sellerConfirmedAt'] ?? json['seller_confirmed_at'])
-          : null,
       status: TransactionStatus.fromString(json['status']),
-      autoConfirmAt:
-          DateTime.parse(json['autoConfirmAt'] ?? json['auto_confirm_at']),
       createdAt: DateTime.parse(json['createdAt'] ?? json['created_at']),
       initiator: json['initiator'] != null
           ? TransactionUser.fromJson(json['initiator'])
@@ -228,13 +224,14 @@ class Transaction {
   bool get isPending => status == TransactionStatus.pending;
 
   /// Check if transaction is confirmed
-  bool get isConfirmed => status == TransactionStatus.confirmed;
+  bool get isPreparing => status == TransactionStatus.preparing;
 
-  /// Check if rating is available (confirmed or auto-confirm passed)
-  bool get canRate =>
-      status == TransactionStatus.confirmed ||
-      (status == TransactionStatus.pending &&
-          DateTime.now().isAfter(autoConfirmAt));
+  bool get isReadyToDeliver => status == TransactionStatus.readyToDeliver;
+
+  bool get isDelivered => status == TransactionStatus.delivered;
+
+  /// Check if rating is available (delivered)
+  bool get canRate => status == TransactionStatus.delivered;
 
   /// Check if given user can submit a review (must NOT be the product owner)
   bool canSubmitReview(int userId) {
@@ -252,12 +249,6 @@ class Transaction {
     return false;
   }
 
-  /// Days until auto-confirm
-  int get daysUntilAutoConfirm {
-    if (status != TransactionStatus.pending) return 0;
-    final diff = autoConfirmAt.difference(DateTime.now());
-    return diff.inDays > 0 ? diff.inDays : 0;
-  }
 }
 
 /// Response model for paginated transactions

@@ -266,6 +266,41 @@ class _CreateReviewScreenState extends ConsumerState<CreateReviewScreen> {
                       ),
               ),
             ),
+
+            const SizedBox(height: 16),
+
+            // Report a problem button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  context.push(
+                    '/support/tickets/new',
+                    extra: {
+                      'initialSubject': isRtl
+                          ? 'بلاغ عن طلب #${widget.transactionId}'
+                          : 'Report on Order #${widget.transactionId}',
+                      'initialDescription': isRtl
+                          ? 'أريد الإبلاغ عن مشكلة تتعلق بالطلب رقم ${widget.transactionId} (المنتج رقم ${widget.productId}).\n\nالمشكلة:\n'
+                          : 'I would like to report an issue with Order #${widget.transactionId} (Product #${widget.productId}).\n\nIssue:\n',
+                    },
+                  );
+                },
+                icon: const Icon(Icons.flag_outlined, size: 20),
+                label: Text(
+                  isRtl ? 'الإبلاغ عن مشكلة' : 'Report a Problem',
+                  style: const TextStyle(fontSize: 14),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red.shade600,
+                  side: BorderSide(color: Colors.red.shade300),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

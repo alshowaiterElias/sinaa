@@ -103,8 +103,13 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
         lon: lon,
       );
 
+      // Client-side safety filter: never show the current user's own project
+      final filtered = user != null
+          ? response.projects.where((p) => p.ownerId != user.id).toList()
+          : response.projects;
+
       setState(() {
-        _projects = response.projects;
+        _projects = filtered;
         _hasMore = response.pagination.hasMore;
         _isLoading = false;
       });
@@ -150,8 +155,13 @@ class _ProjectListScreenState extends ConsumerState<ProjectListScreen> {
         lon: lon,
       );
 
+      // Client-side safety filter
+      final filtered = user != null
+          ? response.projects.where((p) => p.ownerId != user.id).toList()
+          : response.projects;
+
       setState(() {
-        _projects.addAll(response.projects);
+        _projects.addAll(filtered);
         _hasMore = response.pagination.hasMore;
         _isLoadingMore = false;
       });

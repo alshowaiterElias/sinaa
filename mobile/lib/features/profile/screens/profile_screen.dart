@@ -67,6 +67,11 @@ class ProfileScreen extends ConsumerWidget {
                             : 'Category Requests',
                         onTap: () => context.push(Routes.categoryRequests),
                       ),
+                      _MenuItem(
+                        icon: Icons.bar_chart_rounded,
+                        label: l10n.isRtl ? "التقارير" : 'Reports',
+                        onTap: () => context.push(Routes.ownerReports),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),

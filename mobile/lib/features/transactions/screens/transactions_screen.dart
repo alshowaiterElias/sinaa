@@ -52,8 +52,16 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                 child: Text(isRtl ? 'قيد الانتظار' : 'Pending'),
               ),
               PopupMenuItem(
-                value: TransactionStatus.confirmed,
-                child: Text(isRtl ? 'مؤكد' : 'Confirmed'),
+                value: TransactionStatus.preparing,
+                child: Text(isRtl ? 'قيد التجهيز' : 'Preparing'),
+              ),
+              PopupMenuItem(
+                value: TransactionStatus.readyToDeliver,
+                child: Text(isRtl ? 'جاهز للتسليم' : 'Ready to Deliver'),
+              ),
+              PopupMenuItem(
+                value: TransactionStatus.delivered,
+                child: Text(isRtl ? 'تم التسليم' : 'Delivered'),
               ),
               PopupMenuItem(
                 value: TransactionStatus.cancelled,
@@ -228,27 +236,6 @@ class _TransactionCard extends StatelessWidget {
                   ],
                 ),
 
-              // Auto-confirm info if pending
-              if (transaction.isPending &&
-                  transaction.daysUntilAutoConfirm > 0) ...[
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.timer_outlined,
-                        size: 18, color: Colors.orange),
-                    const SizedBox(width: 8),
-                    Text(
-                      isRtl
-                          ? 'تأكيد تلقائي بعد ${transaction.daysUntilAutoConfirm} أيام'
-                          : 'Auto-confirm in ${transaction.daysUntilAutoConfirm} days',
-                      style: const TextStyle(
-                        color: Colors.orange,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
 
               // Can rate indicator (only for customers who can review, not product owners)
               if (currentUserId != null &&

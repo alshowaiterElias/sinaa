@@ -34,7 +34,7 @@ class ProductListScreen extends ConsumerStatefulWidget {
 class _ProductListScreenState extends ConsumerState<ProductListScreen> {
   List<Product> _products = [];
   List<Product> _featuredProducts = [];
-  bool _showFeatured = true;
+  late bool _showFeatured;
   bool _isLoading = true;
   bool _isLoadingMore = false;
   String? _error;
@@ -61,6 +61,8 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
     super.initState();
     _searchController = TextEditingController(text: widget.searchQuery);
     _searchQuery = widget.searchQuery ?? '';
+    // Owners always see all products; customers default to featured view
+    _showFeatured = !widget.isOwner;
     _loadProducts();
     _scrollController.addListener(_onScroll);
 

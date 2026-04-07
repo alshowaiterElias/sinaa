@@ -260,7 +260,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         context.push(Routes.myProject);
         break;
       case NotificationType.transaction:
-        // TODO: Navigate to transaction details when implemented
+        if (data.conversationId != null) {
+          context.push('/chat/${data.conversationId}');
+        } else if (data.transactionId != null) {
+          context.push('/transactions/${data.transactionId}');
+        }
         break;
       case NotificationType.review:
         // If we have transactionId and productId, navigate to create review

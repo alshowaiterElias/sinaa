@@ -1674,11 +1674,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(isRtl ? 'طلب تقييم' : 'Request Rating'),
+        title: Text(isRtl ? 'طلب شراء' : 'Request purchase'),
         content: Text(
           isRtl
-              ? 'سيتم بدء محادثة مع البائع وإرسال طلب تقييم لهذا المنتج:\n\n${product.nameAr}'
-              : 'A conversation will be started with the seller and a rating request will be sent for this product:\n\n${product.name}',
+              ? 'سيتم بدء محادثة مع البائع وإرسال طلب شراء لهذا المنتج:\n\n${product.nameAr}'
+              : 'A conversation will be started with the seller and a purchase request will be sent for this product:\n\n${product.name}',
         ),
         actions: [
           TextButton(
@@ -1687,7 +1687,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text(isRtl ? 'طلب التقييم' : 'Request Rating'),
+            child: Text(isRtl ? 'طلب الشراء' : 'Request purchase'),
           ),
         ],
       ),

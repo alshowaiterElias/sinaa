@@ -1,24 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import { Op } from 'sequelize';
-import { Transaction, User, Conversation, Product, SupportTicket, SystemSetting, Notification } from '../models';
+import { Transaction, User, Conversation, Product, SupportTicket, Notification } from '../models';
 import Project from '../models/Project';
 import Message from '../models/Message';
-import { NotificationTemplates } from '../services/notification.service';
-
-// Helper to calculate auto-confirm date
-async function getAutoConfirmDate(): Promise<Date> {
-    const days = await SystemSetting.getAutoConfirmDays();
-    const date = new Date();
-    date.setDate(date.getDate() + days);
-    return date;
-}
 
 // Helper to get the other party in a conversation
 async function getOtherPartyId(conversationId: number, currentUserId: number): Promise<number | null> {
     const conversation = await Conversation.findByPk(conversationId);
     if (!conversation) return null;
 
-    // Use the new normalized schema
     if (conversation.user1Id === currentUserId) {
         return conversation.user2Id;
     } else if (conversation.user2Id === currentUserId) {
@@ -34,30 +24,26 @@ async function getUserRole(conversationId: number, userId: number): Promise<'cus
     });
     if (!conversation) return null;
 
-    // Check if user is part of conversation
     if (conversation.user1Id !== userId && conversation.user2Id !== userId) {
         return null;
     }
 
-    // If there's a project, the owner is the seller
     if (conversation.project?.ownerId === userId) {
         return 'seller';
     }
 
-    // Otherwise, user is the customer
     return 'customer';
 }
 
 /**
- * Initiate a new transaction (rating request)
+ * Initiate a new transaction (Order Request)
  * POST /transactions
  */
 export const initiateTransaction = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userId = req.user!.id;
         const { conversationId, productId } = req.body;
-        console.log("HELLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL");
-        console.log(productId);
+
         if (!conversationId) {
             return res.status(400).json({
                 success: false,
@@ -65,7 +51,6 @@ export const initiateTransaction = async (req: Request, res: Response, next: Nex
             });
         }
 
-        // Verify conversation exists and user is part of it
         const conversation = await Conversation.findByPk(conversationId);
         if (!conversation) {
             return res.status(404).json({
@@ -74,51 +59,32 @@ export const initiateTransaction = async (req: Request, res: Response, next: Nex
             });
         }
 
-        // Check if user is part of the conversation
         const userRole = await getUserRole(conversationId, userId);
-        if (!userRole) {
+        if (!userRole || userRole !== 'customer') {
             return res.status(403).json({
                 success: false,
-                error: { code: 'FORBIDDEN', message: 'You are not part of this conversation' },
+                error: { code: 'FORBIDDEN', message: 'Only a customer can initiate an order.' },
             });
         }
 
-        // Check for existing transaction for this specific product (pending or confirmed)
         // Allow multiple transactions per conversation as long as products are different
         if (productId) {
             const existingProductTransaction = await Transaction.findOne({
                 where: {
                     conversationId,
                     productId,
-                    status: ['pending', 'confirmed'],
+                    status: ['pending', 'preparing', 'ready_to_deliver'],
                 },
             });
 
             if (existingProductTransaction) {
                 return res.status(400).json({
                     success: false,
-                    error: { code: 'PRODUCT_ALREADY_RATED', message: 'A transaction already exists for this product' },
-                });
-            }
-        } else {
-            // If no product specified, check for existing pending transaction without product
-            const existingPendingTransaction = await Transaction.findOne({
-                where: {
-                    conversationId,
-                    productId: null,
-                    status: 'pending',
-                },
-            });
-
-            if (existingPendingTransaction) {
-                return res.status(400).json({
-                    success: false,
-                    error: { code: 'ALREADY_EXISTS', message: 'A pending transaction already exists for this conversation' },
+                    error: { code: 'PRODUCT_ORDER_ACTIVE', message: 'An active order already exists for this product' },
                 });
             }
         }
 
-        // Verify product if provided and get product details
         let productName: string | null = null;
         let productNameAr: string | null = null;
         if (productId) {
@@ -133,38 +99,24 @@ export const initiateTransaction = async (req: Request, res: Response, next: Nex
             productNameAr = product.nameAr || product.name;
         }
 
-        // Calculate auto-confirm date
-        const autoConfirmAt = await getAutoConfirmDate();
-
-        // Determine which side to auto-confirm based on who initiated
-        const isCustomerInitiator = userRole === 'customer';
-        const isSellerInitiator = userRole === 'seller';
-
-        // Create transaction with initiator's side auto-confirmed
         const transaction = await Transaction.create({
             conversationId,
             productId: productId || null,
             initiatedBy: userId,
-            autoConfirmAt,
-            customerConfirmed: isCustomerInitiator,
-            sellerConfirmed: isSellerInitiator,
-            customerConfirmedAt: isCustomerInitiator ? new Date() : null,
-            sellerConfirmedAt: isSellerInitiator ? new Date() : null,
+            status: 'pending'
         });
 
-        // Notify the other party
         const otherPartyId = await getOtherPartyId(conversationId, userId);
         if (otherPartyId) {
             await Notification.create({
                 userId: otherPartyId,
                 type: 'transaction_initiated',
-                title: 'New Rating Request',
-                titleAr: 'طلب تقييم جديد',
-                data: { transactionId: transaction.id },
+                title: 'New Order Request',
+                titleAr: 'طلب جديد',
+                data: { transactionId: transaction.id, conversationId },
             });
         }
 
-        // Create a transaction message in the chat with product details
         await Message.create({
             conversationId,
             senderId: userId,
@@ -177,13 +129,11 @@ export const initiateTransaction = async (req: Request, res: Response, next: Nex
             messageType: 'transaction',
         });
 
-        // Update conversation's lastMessageAt
         await Conversation.update(
             { lastMessageAt: new Date(), deletedByUser1: false, deletedByUser2: false },
             { where: { id: conversationId } }
         );
 
-        // Fetch with associations
         const fullTransaction = await Transaction.findByPk(transaction.id, {
             include: [
                 { model: User, as: 'initiator', attributes: ['id', 'fullName', 'avatarUrl'] },
@@ -211,14 +161,12 @@ export const getTransactions = async (req: Request, res: Response, next: NextFun
 
         const offset = (Number(page) - 1) * Number(limit);
 
-        // Build where clause - get transactions where user is initiator or other party
         const whereClause: any = {};
 
         if (status && status !== 'all') {
             whereClause.status = status;
         }
 
-        // Get conversations where user is involved (using new normalized schema)
         const userConversations = await Conversation.findAll({
             where: {
                 [Op.or]: [
@@ -312,7 +260,6 @@ export const getTransactionById = async (req: Request, res: Response, next: Next
             });
         }
 
-        // Verify user is part of the transaction
         const userRole = await getUserRole(transaction.conversationId, userId);
         if (!userRole) {
             return res.status(403).json({
@@ -331,10 +278,10 @@ export const getTransactionById = async (req: Request, res: Response, next: Next
 };
 
 /**
- * Confirm transaction
- * PUT /transactions/:id/confirm
+ * Accept Order (Owner only)
+ * PUT /transactions/:id/accept
  */
-export const confirmTransaction = async (req: Request, res: Response, next: NextFunction) => {
+export const acceptOrder = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userId = req.user!.id;
         const { id } = req.params;
@@ -342,106 +289,44 @@ export const confirmTransaction = async (req: Request, res: Response, next: Next
         const transaction = await Transaction.findByPk(id);
 
         if (!transaction) {
-            return res.status(404).json({
-                success: false,
-                error: { code: 'NOT_FOUND', message: 'Transaction not found' },
-            });
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Order not found' }});
         }
 
         if (transaction.status !== 'pending') {
-            return res.status(400).json({
-                success: false,
-                error: { code: 'INVALID_STATUS', message: 'Transaction is not pending' },
-            });
+            return res.status(400).json({ success: false, error: { code: 'INVALID_STATUS', message: 'Order is not pending' }});
         }
 
-        // Get user role in conversation
         const userRole = await getUserRole(transaction.conversationId, userId);
-        if (!userRole) {
-            return res.status(403).json({
-                success: false,
-                error: { code: 'FORBIDDEN', message: 'You are not authorized to confirm this transaction' },
-            });
+        if (userRole !== 'seller') {
+            return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Only the project owner can accept the order' }});
         }
 
-        const now = new Date();
-
-        // Update confirmation based on role
-        if (userRole === 'customer') {
-            if (transaction.customerConfirmed) {
-                return res.status(400).json({
-                    success: false,
-                    error: { code: 'ALREADY_CONFIRMED', message: 'You have already confirmed this transaction' },
-                });
-            }
-            transaction.customerConfirmed = true;
-            transaction.customerConfirmedAt = now;
-        } else {
-            if (transaction.sellerConfirmed) {
-                return res.status(400).json({
-                    success: false,
-                    error: { code: 'ALREADY_CONFIRMED', message: 'You have already confirmed this transaction' },
-                });
-            }
-            transaction.sellerConfirmed = true;
-            transaction.sellerConfirmedAt = now;
-        }
-
-        // Check if both parties have confirmed
-        if (transaction.customerConfirmed && transaction.sellerConfirmed) {
-            transaction.status = 'confirmed';
-        }
-
+        transaction.status = 'preparing';
+        transaction.preparingAt = new Date();
         await transaction.save();
 
-        // Notify the other party
-        const otherPartyId = await getOtherPartyId(transaction.conversationId, userId);
-        if (otherPartyId) {
+        const customerId = await getOtherPartyId(transaction.conversationId, userId);
+        if (customerId) {
             await Notification.create({
-                userId: otherPartyId,
-                type: 'transaction_confirmed',
-                title: 'Rating Confirmed',
-                titleAr: 'تأكيد التقييم',
-                data: { transactionId: transaction.id },
+                userId: customerId,
+                type: 'order_accepted',
+                title: 'Order Accepted',
+                titleAr: 'تم قبول الطلب',
+                data: { transactionId: transaction.id, conversationId: transaction.conversationId },
             });
         }
 
-        // If transaction is now confirmed (both parties agreed), notify the customer to write a review
-        if (transaction.status === 'confirmed' && transaction.productId) {
-            const product = await Product.findByPk(transaction.productId);
-            if (product) {
-                // The initiator is typically the customer who requested the rating
-                await NotificationTemplates.transactionAccepted(
-                    transaction.initiatedBy,
-                    transaction.id,
-                    product.id,
-                    product.name || 'Product',
-                );
-            }
-        }
-
-        // Fetch with associations
-        const fullTransaction = await Transaction.findByPk(transaction.id, {
-            include: [
-                { model: User, as: 'initiator', attributes: ['id', 'fullName', 'avatarUrl'] },
-                { model: Product, as: 'product', attributes: ['id', 'name', 'basePrice'] },
-            ],
-        });
-
-        res.json({
-            success: true,
-            data: fullTransaction,
-        });
+        res.json({ success: true, data: transaction });
     } catch (error) {
         next(error);
     }
 };
 
 /**
- * Deny transaction (still allows rating after waiting period)
- * PUT /transactions/:id/deny
+ * Mark as Deliverable (Owner only)
+ * PUT /transactions/:id/deliverable
  */
-export const denyTransaction = async (req: Request, res: Response, next: NextFunction) => {
+export const markDeliverable = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userId = req.user!.id;
         const { id } = req.params;
@@ -449,52 +334,79 @@ export const denyTransaction = async (req: Request, res: Response, next: NextFun
         const transaction = await Transaction.findByPk(id);
 
         if (!transaction) {
-            return res.status(404).json({
-                success: false,
-                error: { code: 'NOT_FOUND', message: 'Transaction not found' },
-            });
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Order not found' }});
         }
 
-        if (transaction.status !== 'pending') {
-            return res.status(400).json({
-                success: false,
-                error: { code: 'INVALID_STATUS', message: 'Transaction is not pending' },
-            });
+        if (transaction.status !== 'preparing') {
+            return res.status(400).json({ success: false, error: { code: 'INVALID_STATUS', message: 'Order is not in preparing stage' }});
         }
 
-        // Verify user is part of the conversation but NOT the initiator
         const userRole = await getUserRole(transaction.conversationId, userId);
-        if (!userRole) {
-            return res.status(403).json({
-                success: false,
-                error: { code: 'FORBIDDEN', message: 'You are not authorized to deny this transaction' },
+        if (userRole !== 'seller') {
+            return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Only the project owner can mark this as deliverable' }});
+        }
+
+        transaction.status = 'ready_to_deliver';
+        transaction.readyToDeliverAt = new Date();
+        await transaction.save();
+
+        const customerId = await getOtherPartyId(transaction.conversationId, userId);
+        if (customerId) {
+            await Notification.create({
+                userId: customerId,
+                type: 'order_ready',
+                title: 'Order Ready To Deliver',
+                titleAr: 'الطلب جاهز للتسليم',
+                data: { transactionId: transaction.id, conversationId: transaction.conversationId },
             });
         }
 
-        if (transaction.initiatedBy === userId) {
-            return res.status(400).json({
-                success: false,
-                error: { code: 'CANNOT_DENY_OWN', message: 'You cannot deny your own transaction' },
+        res.json({ success: true, data: transaction });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Receive Order (Customer only)
+ * PUT /transactions/:id/receive
+ */
+export const receiveOrder = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user!.id;
+        const { id } = req.params;
+
+        const transaction = await Transaction.findByPk(id);
+
+        if (!transaction) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Order not found' }});
+        }
+
+        if (transaction.status !== 'ready_to_deliver') {
+            return res.status(400).json({ success: false, error: { code: 'INVALID_STATUS', message: 'Order is not ready to deliver yet' }});
+        }
+
+        const userRole = await getUserRole(transaction.conversationId, userId);
+        if (userRole !== 'customer') {
+            return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Only the customer can receive the order' }});
+        }
+
+        transaction.status = 'delivered';
+        transaction.deliveredAt = new Date();
+        await transaction.save();
+
+        const sellerId = await getOtherPartyId(transaction.conversationId, userId);
+        if (sellerId) {
+            await Notification.create({
+                userId: sellerId,
+                type: 'order_delivered',
+                title: 'Order Delivered',
+                titleAr: 'تم استلام الطلب',
+                data: { transactionId: transaction.id, conversationId: transaction.conversationId },
             });
         }
 
-        // Denying just means they don't confirm - the auto-confirm will happen after waiting period
-        // Notify the initiator that their request was denied but will auto-confirm
-        await Notification.create({
-            userId: transaction.initiatedBy,
-            type: 'transaction_denied',
-            title: 'Rating Request Denied',
-            titleAr: 'رفض طلب التقييم',
-            data: { transactionId: transaction.id, autoConfirmAt: transaction.autoConfirmAt },
-        });
-
-        res.json({
-            success: true,
-            message: 'Transaction denial recorded. Rating will be available after waiting period.',
-            data: {
-                autoConfirmAt: transaction.autoConfirmAt,
-            },
-        });
+        res.json({ success: true, data: transaction });
     } catch (error) {
         next(error);
     }
@@ -522,24 +434,21 @@ export const openDispute = async (req: Request, res: Response, next: NextFunctio
         if (!transaction) {
             return res.status(404).json({
                 success: false,
-                error: { code: 'NOT_FOUND', message: 'Transaction not found' },
+                error: { code: 'NOT_FOUND', message: 'Order not found' },
             });
         }
 
-        // Verify user is part of the conversation
         const userRole = await getUserRole(transaction.conversationId, userId);
         if (!userRole) {
             return res.status(403).json({
                 success: false,
-                error: { code: 'FORBIDDEN', message: 'You are not authorized to dispute this transaction' },
+                error: { code: 'FORBIDDEN', message: 'You are not authorized to dispute this order' },
             });
         }
 
-        // Update transaction status
         transaction.status = 'disputed';
         await transaction.save();
 
-        // Create support ticket for dispute
         const ticket = await SupportTicket.create({
             userId,
             type: 'dispute',
@@ -549,14 +458,13 @@ export const openDispute = async (req: Request, res: Response, next: NextFunctio
             relatedType: 'transaction',
         });
 
-        // Notify admin and other party
         const otherPartyId = await getOtherPartyId(transaction.conversationId, userId);
         if (otherPartyId) {
             await Notification.create({
                 userId: otherPartyId,
                 type: 'transaction_disputed',
-                title: 'Rating Dispute Opened',
-                titleAr: 'نزاع على التقييم',
+                title: 'Order Disputed',
+                titleAr: 'نزاع على الطلب',
                 data: { transactionId: transaction.id, ticketId: ticket.id },
             });
         }
@@ -575,7 +483,7 @@ export const openDispute = async (req: Request, res: Response, next: NextFunctio
 };
 
 /**
- * Cancel transaction (by initiator or recipient, only if pending)
+ * Cancel transaction
  * PUT /transactions/:id/cancel
  */
 export const cancelTransaction = async (req: Request, res: Response, next: NextFunction) => {
@@ -588,43 +496,43 @@ export const cancelTransaction = async (req: Request, res: Response, next: NextF
         if (!transaction) {
             return res.status(404).json({
                 success: false,
-                error: { code: 'NOT_FOUND', message: 'Transaction not found' },
+                error: { code: 'NOT_FOUND', message: 'Order not found' },
             });
         }
 
         if (transaction.status !== 'pending') {
             return res.status(400).json({
                 success: false,
-                error: { code: 'INVALID_STATUS', message: 'Only pending transactions can be cancelled' },
+                error: { code: 'INVALID_STATUS', message: 'Only pending orders can be cancelled' },
             });
         }
 
-        // Only the initiator can cancel
-        if (transaction.initiatedBy !== userId) {
+        const userRole = await getUserRole(transaction.conversationId, userId);
+        if (!userRole) {
             return res.status(403).json({
                 success: false,
-                error: { code: 'FORBIDDEN', message: 'Only the initiator can cancel a transaction' },
+                error: { code: 'FORBIDDEN', message: 'Not authorized' },
             });
         }
 
         transaction.status = 'cancelled';
         await transaction.save();
 
-        // Notify the other party
         const otherPartyId = await getOtherPartyId(transaction.conversationId, userId);
         if (otherPartyId) {
             await Notification.create({
                 userId: otherPartyId,
                 type: 'transaction_cancelled',
-                title: 'Rating Request Cancelled',
-                titleAr: 'إلغاء طلب التقييم',
+                title: 'Order Cancelled',
+                titleAr: 'إلغاء الطلب',
                 data: { transactionId: transaction.id },
             });
         }
 
         res.json({
             success: true,
-            message: 'Transaction cancelled successfully',
+            message: 'Order cancelled successfully',
+            data: transaction,
         });
     } catch (error) {
         next(error);

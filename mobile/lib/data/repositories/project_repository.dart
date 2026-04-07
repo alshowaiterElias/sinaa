@@ -186,6 +186,22 @@ class ProjectsRepository {
       throw ApiException.fromDioError(e);
     }
   }
+
+  /// Fetch owner reports / dashboard analytics
+  Future<Map<String, dynamic>> getOwnerReports() async {
+    try {
+      final response = await _dio.get(ApiEndpoints.ownerReports);
+      if (response.data['success'] == true) {
+        return response.data['data'] as Map<String, dynamic>;
+      }
+      throw ApiException(
+        message: response.data['error']?['message'] ?? 'Failed to load reports',
+        code: response.data['error']?['code'] ?? 'UNKNOWN_ERROR',
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
 }
 
 /// Response for projects list endpoint
@@ -209,6 +225,7 @@ class ProjectProductsResponse {
     required this.pagination,
   });
 }
+
 
 /// Projects repository provider
 final projectsRepositoryProvider = Provider<ProjectsRepository>((ref) {

@@ -61,6 +61,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final hasUserLocation =
         user != null && user.hasLocation && user.locationSharingEnabled == true;
 
+    // Refresh projects/products when user changes (login/logout/switch)
+    ref.listen<User?>(currentUserProvider, (prev, next) {
+      final prevId = prev?.id;
+      final nextId = next?.id;
+      if (prevId != nextId) {
+        debugPrint('[HOME] User changed ($prevId -> $nextId), refreshing data');
+        // Invalidate completely resets the provider state (including isLoading),
+        // avoiding the race condition where a pending load blocks the new one.
+        ref.invalidate(projectsStateProvider);
+        ref.invalidate(featuredProductsProvider);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            ref.read(projectsStateProvider.notifier).loadProjects();
+            ref.read(featuredProductsProvider.notifier).loadFeaturedProducts();
+          }
+        });
+      }
+    });
+
     // Initialize socket and notification listeners when logged in
     ref.watch(socketInitProvider);
     ref.watch(notificationInitProvider);
@@ -785,7 +804,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     // projectsState.projects.forEach((p) => print(p.ownerId));
-    final projects = projectsState.projects.take(5).toList();
+    // Client-side safety filter: never show the current user's own project
+    final currentUser = ref.watch(currentUserProvider);
+    final allProjects = projectsState.projects as List;
+    final filteredProjects = currentUser != null
+        ? allProjects.where((p) => p.ownerId != currentUser.id).toList()
+        : allProjects;
+    final projects = filteredProjects.take(5).toList();
     return SizedBox(
       height: 300,
       child: ListView.builder(

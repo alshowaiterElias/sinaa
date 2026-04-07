@@ -98,19 +98,16 @@ class TransactionsNotifier extends Notifier<TransactionsState> {
     loadTransactions(refresh: true);
   }
 
-  /// Confirm transaction
-  Future<bool> confirmTransaction(int transactionId) async {
+  /// Accept Order
+  Future<bool> acceptOrder(int transactionId) async {
     try {
-      final updated = await _repository.confirmTransaction(transactionId);
-
-      // Update in list
+      final updated = await _repository.acceptOrder(transactionId);
       final index = state.transactions.indexWhere((t) => t.id == transactionId);
       if (index != -1) {
         final updatedList = List<Transaction>.from(state.transactions);
         updatedList[index] = updated;
         state = state.copyWith(transactions: updatedList);
       }
-
       return true;
     } catch (e) {
       state = state.copyWith(error: e.toString());
@@ -118,12 +115,33 @@ class TransactionsNotifier extends Notifier<TransactionsState> {
     }
   }
 
-  /// Deny transaction
-  Future<bool> denyTransaction(int transactionId) async {
+  /// Mark Deliverable
+  Future<bool> markDeliverable(int transactionId) async {
     try {
-      await _repository.denyTransaction(transactionId);
-      // Refresh to get updated data
-      await loadTransactions(refresh: true);
+      final updated = await _repository.markDeliverable(transactionId);
+      final index = state.transactions.indexWhere((t) => t.id == transactionId);
+      if (index != -1) {
+        final updatedList = List<Transaction>.from(state.transactions);
+        updatedList[index] = updated;
+        state = state.copyWith(transactions: updatedList);
+      }
+      return true;
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return false;
+    }
+  }
+
+  /// Receive Order
+  Future<bool> receiveOrder(int transactionId) async {
+    try {
+      final updated = await _repository.receiveOrder(transactionId);
+      final index = state.transactions.indexWhere((t) => t.id == transactionId);
+      if (index != -1) {
+        final updatedList = List<Transaction>.from(state.transactions);
+        updatedList[index] = updated;
+        state = state.copyWith(transactions: updatedList);
+      }
       return true;
     } catch (e) {
       state = state.copyWith(error: e.toString());

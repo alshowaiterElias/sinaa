@@ -5,7 +5,7 @@ import Conversation from './Conversation';
 import Product from './Product';
 
 // Transaction status types
-export type TransactionStatus = 'pending' | 'confirmed' | 'disputed' | 'cancelled';
+export type TransactionStatus = 'pending' | 'preparing' | 'ready_to_deliver' | 'delivered' | 'disputed' | 'cancelled';
 
 // Transaction attributes interface
 export interface TransactionAttributes {
@@ -13,18 +13,16 @@ export interface TransactionAttributes {
     conversationId: number;
     productId: number | null;
     initiatedBy: number;
-    customerConfirmed: boolean;
-    sellerConfirmed: boolean;
-    customerConfirmedAt: Date | null;
-    sellerConfirmedAt: Date | null;
     status: TransactionStatus;
-    autoConfirmAt: Date;
+    preparingAt: Date | null;
+    readyToDeliverAt: Date | null;
+    deliveredAt: Date | null;
     createdAt: Date;
 }
 
 // Attributes for creation
 export interface TransactionCreationAttributes
-    extends Optional<TransactionAttributes, 'id' | 'productId' | 'customerConfirmed' | 'sellerConfirmed' | 'customerConfirmedAt' | 'sellerConfirmedAt' | 'status' | 'createdAt'> { }
+    extends Optional<TransactionAttributes, 'id' | 'productId' | 'status' | 'preparingAt' | 'readyToDeliverAt' | 'deliveredAt' | 'createdAt'> { }
 
 // Transaction model class
 class Transaction
@@ -34,12 +32,10 @@ class Transaction
     public conversationId!: number;
     public productId!: number | null;
     public initiatedBy!: number;
-    public customerConfirmed!: boolean;
-    public sellerConfirmed!: boolean;
-    public customerConfirmedAt!: Date | null;
-    public sellerConfirmedAt!: Date | null;
     public status!: TransactionStatus;
-    public autoConfirmAt!: Date;
+    public preparingAt!: Date | null;
+    public readyToDeliverAt!: Date | null;
+    public deliveredAt!: Date | null;
     public readonly createdAt!: Date;
 
     // Associations
@@ -47,24 +43,21 @@ class Transaction
     public readonly conversation?: Conversation;
     public readonly product?: Product;
 
-    // Check if transaction is pending
+    // Check statuses
     public isPending(): boolean {
         return this.status === 'pending';
     }
 
-    // Check if transaction is confirmed
-    public isConfirmed(): boolean {
-        return this.status === 'confirmed';
+    public isPreparing(): boolean {
+        return this.status === 'preparing';
     }
 
-    // Check if both parties have confirmed
-    public isFullyConfirmed(): boolean {
-        return this.customerConfirmed && this.sellerConfirmed;
+    public isReadyToDeliver(): boolean {
+        return this.status === 'ready_to_deliver';
     }
 
-    // Check if auto-confirm time has passed
-    public shouldAutoConfirm(): boolean {
-        return this.status === 'pending' && new Date() >= this.autoConfirmAt;
+    public isDelivered(): boolean {
+        return this.status === 'delivered';
     }
 }
 
@@ -102,34 +95,24 @@ Transaction.init(
                 key: 'id',
             },
         },
-        customerConfirmed: {
-            type: DataTypes.BOOLEAN,
-            defaultValue: false,
-            field: 'customer_confirmed',
-        },
-        sellerConfirmed: {
-            type: DataTypes.BOOLEAN,
-            defaultValue: false,
-            field: 'seller_confirmed',
-        },
-        customerConfirmedAt: {
+        preparingAt: {
             type: DataTypes.DATE,
             allowNull: true,
-            field: 'customer_confirmed_at',
+            field: 'preparing_at',
         },
-        sellerConfirmedAt: {
+        readyToDeliverAt: {
             type: DataTypes.DATE,
             allowNull: true,
-            field: 'seller_confirmed_at',
+            field: 'ready_to_deliver_at',
+        },
+        deliveredAt: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            field: 'delivered_at',
         },
         status: {
-            type: DataTypes.ENUM('pending', 'confirmed', 'disputed', 'cancelled'),
+            type: DataTypes.ENUM('pending', 'preparing', 'ready_to_deliver', 'delivered', 'disputed', 'cancelled'),
             defaultValue: 'pending',
-        },
-        autoConfirmAt: {
-            type: DataTypes.DATE,
-            allowNull: false,
-            field: 'auto_confirm_at',
         },
         createdAt: {
             type: DataTypes.DATE,
@@ -147,7 +130,6 @@ Transaction.init(
             { fields: ['product_id'] },
             { fields: ['initiated_by'] },
             { fields: ['status'] },
-            { fields: ['auto_confirm_at'] },
         ],
     }
 );

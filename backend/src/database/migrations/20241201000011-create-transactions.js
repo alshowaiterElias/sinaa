@@ -40,30 +40,21 @@ module.exports = {
         onDelete: 'RESTRICT',
         onUpdate: 'CASCADE',
       },
-      customer_confirmed: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: false,
-      },
-      seller_confirmed: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: false,
-      },
-      customer_confirmed_at: {
+      preparing_at: {
         type: Sequelize.DATE,
         allowNull: true,
       },
-      seller_confirmed_at: {
+      ready_to_deliver_at: {
+        type: Sequelize.DATE,
+        allowNull: true,
+      },
+      delivered_at: {
         type: Sequelize.DATE,
         allowNull: true,
       },
       status: {
-        type: Sequelize.ENUM('pending', 'confirmed', 'disputed', 'cancelled'),
+        type: Sequelize.ENUM('pending', 'preparing', 'ready_to_deliver', 'delivered', 'disputed', 'cancelled'),
         defaultValue: 'pending',
-      },
-      auto_confirm_at: {
-        type: Sequelize.DATE,
-        allowNull: false,
-        comment: 'When to auto-confirm',
       },
       created_at: {
         type: Sequelize.DATE,
@@ -71,12 +62,10 @@ module.exports = {
       },
     });
 
-    // Add indexes
     await queryInterface.addIndex('transactions', ['conversation_id']);
     await queryInterface.addIndex('transactions', ['product_id']);
     await queryInterface.addIndex('transactions', ['initiated_by']);
     await queryInterface.addIndex('transactions', ['status']);
-    await queryInterface.addIndex('transactions', ['auto_confirm_at']);
   },
 
   async down(queryInterface, Sequelize) {

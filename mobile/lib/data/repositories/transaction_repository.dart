@@ -84,17 +84,17 @@ class TransactionRepository {
     }
   }
 
-  /// Confirm transaction
-  Future<Transaction> confirmTransaction(int id) async {
+  /// Accept Order (Owner only)
+  Future<Transaction> acceptOrder(int id) async {
     try {
-      final response = await _dio.put(ApiEndpoints.transactionConfirm(id));
+      final response = await _dio.put(ApiEndpoints.transactionAccept(id));
 
       if (response.data['success'] == true) {
         return Transaction.fromJson(response.data['data']);
       }
       throw ApiException(
         message: response.data['error']?['message'] ??
-            'Failed to confirm transaction',
+            'Failed to accept order',
         code: response.data['error']?['code'] ?? 'UNKNOWN_ERROR',
       );
     } on DioException catch (e) {
@@ -102,20 +102,35 @@ class TransactionRepository {
     }
   }
 
-  /// Deny transaction
-  Future<Map<String, dynamic>> denyTransaction(int id) async {
+  /// Mark Order as Deliverable (Owner only)
+  Future<Transaction> markDeliverable(int id) async {
     try {
-      final response = await _dio.put('${ApiEndpoints.transactions}/$id/deny');
+      final response = await _dio.put(ApiEndpoints.transactionDeliverable(id));
 
       if (response.data['success'] == true) {
-        return {
-          'message': response.data['message'],
-          'autoConfirmAt': response.data['data']?['autoConfirmAt'],
-        };
+        return Transaction.fromJson(response.data['data']);
       }
       throw ApiException(
-        message:
-            response.data['error']?['message'] ?? 'Failed to deny transaction',
+        message: response.data['error']?['message'] ??
+            'Failed to mark order deliverable',
+        code: response.data['error']?['code'] ?? 'UNKNOWN_ERROR',
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  /// Receive Order (Customer only)
+  Future<Transaction> receiveOrder(int id) async {
+    try {
+      final response = await _dio.put(ApiEndpoints.transactionReceive(id));
+
+      if (response.data['success'] == true) {
+        return Transaction.fromJson(response.data['data']);
+      }
+      throw ApiException(
+        message: response.data['error']?['message'] ??
+            'Failed to receive order',
         code: response.data['error']?['code'] ?? 'UNKNOWN_ERROR',
       );
     } on DioException catch (e) {

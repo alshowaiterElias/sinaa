@@ -109,48 +109,62 @@ export const NotificationTemplates = {
     },
 
     /**
-     * Transaction initiated notification
+     * Order initiated notification
      */
-    transactionInitiated(userId: number, transactionId: number, amount: number): Promise<Notification> {
+    orderInitiated(userId: number, transactionId: number, productName: string): Promise<Notification> {
         return createNotification({
             userId,
             type: 'transaction',
-            title: 'New Transaction Initiated',
-            titleAr: 'معاملة جديدة',
-            body: `A new transaction for ${amount} SAR has been initiated`,
-            bodyAr: `تم بدء معاملة جديدة بقيمة ${amount} ريال`,
+            title: 'New Order Request',
+            titleAr: 'طلب جديد',
+            body: `You received a new order for "${productName}"`,
+            bodyAr: `لقد تلقيت طلباً جديداً لمنتج "${productName}"`,
             data: { transactionId },
         });
     },
 
     /**
-     * Transaction confirmed notification
+     * Order accepted notification
      */
-    transactionConfirmed(userId: number, transactionId: number, amount: number): Promise<Notification> {
+    orderAccepted(userId: number, transactionId: number, productName: string): Promise<Notification> {
         return createNotification({
             userId,
             type: 'transaction',
-            title: 'Transaction Confirmed',
-            titleAr: 'تم تأكيد المعاملة',
-            body: `Transaction of ${amount} SAR has been confirmed`,
-            bodyAr: `تم تأكيد المعاملة بقيمة ${amount} ريال`,
+            title: 'Order Accepted',
+            titleAr: 'تم قبول الطلب',
+            body: `Your order for "${productName}" is being prepared`,
+            bodyAr: `جاري تجهيز طلبك لمنتج "${productName}"`,
             data: { transactionId },
         });
     },
 
     /**
-     * Transaction accepted - customer can now write a review
-     * Sent to the customer when the project owner confirms the transaction
+     * Order ready to deliver notification
      */
-    transactionAccepted(userId: number, transactionId: number, productId: number, productName: string): Promise<Notification> {
+    orderReady(userId: number, transactionId: number, productName: string): Promise<Notification> {
         return createNotification({
             userId,
-            type: 'review',
-            title: 'You can now write a review!',
-            titleAr: 'يمكنك الآن كتابة تقييم!',
-            body: `Your rating request for "${productName}" has been accepted. Tap to write your review.`,
-            bodyAr: `تم قبول طلب التقييم لمنتج "${productName}". اضغط لكتابة تقييمك.`,
-            data: { transactionId, productId },
+            type: 'transaction',
+            title: 'Order Ready To Deliver',
+            titleAr: 'الطلب جاهز للتسليم',
+            body: `Your order for "${productName}" is ready for delivery/pickup`,
+            bodyAr: `طلبك لمنتج "${productName}" جاهز للتسليم/الاستلام`,
+            data: { transactionId },
+        });
+    },
+
+    /**
+     * Order delivered notification
+     */
+    orderDelivered(userId: number, transactionId: number, productName: string): Promise<Notification> {
+        return createNotification({
+            userId,
+            type: 'transaction',
+            title: 'Order Received',
+            titleAr: 'تم استلام الطلب',
+            body: `The customer has received their order for "${productName}"`,
+            bodyAr: `قام العميل باستلام طلبه لمنتج "${productName}"`,
+            data: { transactionId },
         });
     },
 

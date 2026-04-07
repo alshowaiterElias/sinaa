@@ -25,7 +25,7 @@ class TransactionDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isRtl ? 'تفاصيل الطلب' : 'Request Details'),
+        title: Text(isRtl ? 'تفاصيل الطلب' : 'Order Details'),
       ),
       body: transactionAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -86,11 +86,9 @@ class _TransactionDetailBodyState
     extends ConsumerState<_TransactionDetailBody> {
   bool _isLoading = false;
 
-  Future<void> _confirmTransaction() async {
+  Future<void> _handleAction(Future<bool> Function(int) action, String successMsgEn, String successMsgAr) async {
     setState(() => _isLoading = true);
-    final success = await ref
-        .read(transactionsProvider.notifier)
-        .confirmTransaction(widget.transaction.id);
+    final success = await action(widget.transaction.id);
     setState(() => _isLoading = false);
 
     if (mounted) {
@@ -98,7 +96,7 @@ class _TransactionDetailBodyState
         SnackBar(
           content: Text(
             success
-                ? (widget.isRtl ? 'تم التأكيد بنجاح' : 'Confirmed successfully')
+                ? (widget.isRtl ? successMsgAr : successMsgEn)
                 : (ref.read(transactionsProvider).error ??
                     (widget.isRtl ? 'حدث خطأ' : 'An error occurred')),
           ),
@@ -106,48 +104,34 @@ class _TransactionDetailBodyState
         ),
       );
       if (success) {
-        // Invalidate provider to refresh data when coming back
         ref.invalidate(transactionDetailProvider(widget.transaction.id));
+        ref.read(transactionsProvider.notifier).loadTransactions(refresh: true);
         context.pop();
       }
     }
   }
 
-  Future<void> _denyTransaction() async {
-    setState(() => _isLoading = true);
-    final success = await ref
-        .read(transactionsProvider.notifier)
-        .denyTransaction(widget.transaction.id);
-    setState(() => _isLoading = false);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success
-                ? (widget.isRtl ? 'تم الرفض' : 'Denied successfully')
-                : (ref.read(transactionsProvider).error ??
-                    (widget.isRtl ? 'حدث خطأ' : 'An error occurred')),
-          ),
-          backgroundColor: success ? Colors.orange : Colors.red,
-        ),
-      );
-      if (success) {
-        ref.invalidate(transactionDetailProvider(widget.transaction.id));
-        context.pop();
-      }
-    }
+  Future<void> _acceptOrder() async {
+    await _handleAction(ref.read(transactionsProvider.notifier).acceptOrder, 'Order Accepted', 'تم قبول الطلب');
   }
 
-  Future<void> _cancelTransaction() async {
+  Future<void> _markDeliverable() async {
+    await _handleAction(ref.read(transactionsProvider.notifier).markDeliverable, 'Marked Deliverable', 'متوفر للتسليم');
+  }
+
+  Future<void> _receiveOrder() async {
+    await _handleAction(ref.read(transactionsProvider.notifier).receiveOrder, 'Order Received', 'تم استلام الطلب');
+  }
+
+  Future<void> _cancelOrder() async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(widget.isRtl ? 'إلغاء الطلب' : 'Cancel Request'),
         content: Text(
           widget.isRtl
-              ? 'هل أنت متأكد من إلغاء طلب التقييم؟'
-              : 'Are you sure you want to cancel this rating request?',
+              ? 'هل أنت متأكد من إلغاء الطلب؟'
+              : 'Are you sure you want to cancel this order?',
         ),
         actions: [
           TextButton(
@@ -164,29 +148,7 @@ class _TransactionDetailBodyState
     );
 
     if (confirm == true) {
-      setState(() => _isLoading = true);
-      final success = await ref
-          .read(transactionsProvider.notifier)
-          .cancelTransaction(widget.transaction.id);
-      setState(() => _isLoading = false);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              success
-                  ? (widget.isRtl ? 'تم الإلغاء' : 'Cancelled successfully')
-                  : (ref.read(transactionsProvider).error ??
-                      (widget.isRtl ? 'حدث خطأ' : 'An error occurred')),
-            ),
-            backgroundColor: success ? Colors.green : Colors.red,
-          ),
-        );
-        if (success) {
-          ref.invalidate(transactionDetailProvider(widget.transaction.id));
-          context.pop();
-        }
-      }
+      await _handleAction(ref.read(transactionsProvider.notifier).cancelTransaction, 'Order Cancelled', 'تم الإلغاء');
     }
   }
 
@@ -194,6 +156,10 @@ class _TransactionDetailBodyState
   Widget build(BuildContext context) {
     final dateFormat =
         DateFormat('yyyy/MM/dd HH:mm', widget.isRtl ? 'ar' : 'en');
+        
+    final isCustomer = widget.currentUserId == widget.transaction.initiatedBy;
+    final isSeller = widget.currentUserId != null && widget.currentUserId != widget.transaction.initiatedBy;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -247,77 +213,6 @@ class _TransactionDetailBodyState
           ),
           const SizedBox(height: 16),
 
-          // Confirmation status
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.isRtl ? 'حالة التأكيد' : 'Confirmation Status',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildConfirmationRow(
-                    icon: Icons.person,
-                    label: widget.isRtl ? 'العميل' : 'Customer',
-                    confirmed: widget.transaction.customerConfirmed,
-                  ),
-                  const SizedBox(height: 8),
-                  _buildConfirmationRow(
-                    icon: Icons.store,
-                    label: widget.isRtl ? 'البائع' : 'Seller',
-                    confirmed: widget.transaction.sellerConfirmed,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Auto-confirm info
-          if (widget.transaction.isPending) ...[
-            Card(
-              color: Colors.orange.shade50,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    const Icon(Icons.timer, color: Colors.orange),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.isRtl ? 'تأكيد تلقائي' : 'Auto-Confirm',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.orange,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            widget.isRtl
-                                ? 'سيتم التأكيد تلقائياً في ${dateFormat.format(widget.transaction.autoConfirmAt)}'
-                                : 'Will auto-confirm on ${dateFormat.format(widget.transaction.autoConfirmAt)}',
-                            style: TextStyle(
-                                color: Colors.grey[700], fontSize: 13),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-
           // Product info
           if (widget.transaction.product != null) ...[
             Card(
@@ -333,50 +228,47 @@ class _TransactionDetailBodyState
             const SizedBox(height: 16),
           ],
 
-          // Actions for pending transactions
-          if (widget.transaction.isPending) ...[
-            const SizedBox(height: 8),
-            // Confirm/Deny only shown for receiver (not the initiator)
-            if (widget.currentUserId != widget.transaction.initiatedBy) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _isLoading ? null : _confirmTransaction,
-                      icon: const Icon(Icons.check),
-                      label: Text(widget.isRtl ? 'تأكيد' : 'Confirm'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _isLoading ? null : _denyTransaction,
-                      icon: const Icon(Icons.close),
-                      label: Text(widget.isRtl ? 'رفض' : 'Deny'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ),
-                ],
+          // Go to Chat button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => context.push('/chat/${widget.transaction.conversationId}'),
+              icon: const Icon(Icons.chat_bubble_outline),
+              label: Text(widget.isRtl ? 'الذهاب للمحادثة' : 'Go to Chat'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-            ],
-            // Cancel button only shown for initiator (the one who sent it)
-            if (widget.currentUserId == widget.transaction.initiatedBy) ...[
-              const SizedBox(height: 12),
-              SizedBox(
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Actions
+          if (widget.transaction.isPending && isSeller) ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isLoading ? null : _acceptOrder,
+                icon: const Icon(Icons.check),
+                label: Text(widget.isRtl ? 'قبول الطلب' : 'Accept Order'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+            
+          if (widget.transaction.isPending && (isCustomer || isSeller)) ...[
+             SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: _isLoading ? null : _cancelTransaction,
+                  onPressed: _isLoading ? null : _cancelOrder,
                   icon: const Icon(Icons.cancel_outlined),
-                  label: Text(widget.isRtl ? 'إلغاء الطلب' : 'Cancel Request'),
+                  label: Text(widget.isRtl ? 'إلغاء الطلب' : 'Cancel Order'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red,
                     side: const BorderSide(color: Colors.red),
@@ -384,7 +276,41 @@ class _TransactionDetailBodyState
                   ),
                 ),
               ),
-            ],
+              const SizedBox(height: 12),
+          ],
+
+          if (widget.transaction.isPreparing && isSeller) ...[
+             SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isLoading ? null : _markDeliverable,
+                icon: const Icon(Icons.local_shipping),
+                label: Text(widget.isRtl ? 'جاهز للتسليم' : 'Mark Deliverable'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          if (widget.transaction.isReadyToDeliver && isCustomer) ...[
+             SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isLoading ? null : _receiveOrder,
+                icon: const Icon(Icons.done_all),
+                label: Text(widget.isRtl ? 'استلام الطلب' : 'Receive Order'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
           ],
 
           // Rate button for confirmed transactions (only for customer, not product owner)
@@ -419,43 +345,18 @@ class _TransactionDetailBodyState
     );
   }
 
-  Widget _buildConfirmationRow({
-    required IconData icon,
-    required String label,
-    required bool confirmed,
-  }) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: Colors.grey),
-        const SizedBox(width: 8),
-        Text(label),
-        const Spacer(),
-        Icon(
-          confirmed ? Icons.check_circle : Icons.radio_button_unchecked,
-          color: confirmed ? Colors.green : Colors.grey,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          confirmed
-              ? (widget.isRtl ? 'مؤكد' : 'Confirmed')
-              : (widget.isRtl ? 'بانتظار' : 'Pending'),
-          style: TextStyle(
-            color: confirmed ? Colors.green : Colors.grey,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
   IconData _getStatusIcon() {
     switch (widget.transaction.status) {
       case TransactionStatus.all:
         return Icons.all_inclusive;
       case TransactionStatus.pending:
         return Icons.hourglass_empty;
-      case TransactionStatus.confirmed:
-        return Icons.check_circle;
+      case TransactionStatus.preparing:
+        return Icons.precision_manufacturing;
+      case TransactionStatus.readyToDeliver:
+        return Icons.local_shipping;
+      case TransactionStatus.delivered:
+        return Icons.done_all;
       case TransactionStatus.disputed:
         return Icons.warning;
       case TransactionStatus.cancelled:

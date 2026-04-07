@@ -42,6 +42,7 @@ import '../features/transactions/screens/transactions_screen.dart';
 import '../features/transactions/screens/transaction_detail_screen.dart';
 import '../features/transactions/screens/create_review_screen.dart';
 import '../features/support/screens/static_content_screen.dart';
+import '../features/profile/screens/owner_reports_screen.dart';
 import '../shared/widgets/main_scaffold.dart';
 import '../data/providers/auth_provider.dart';
 import '../core/localization/app_localizations.dart';
@@ -91,6 +92,7 @@ class Routes {
   static const String favorites = '/favorites';
   static const String projectList = '/projects';
   static const String productList = '/products';
+  static const String ownerReports = '/owner-reports';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -439,6 +441,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.favorites,
         builder: (context, state) => const FavoritesScreen(),
+      ),
+
+      // Owner Reports
+      GoRoute(
+        path: Routes.ownerReports,
+        builder: (context, state) => const OwnerReportsScreen(),
       ),
 
       // Project List

@@ -17,6 +17,9 @@ export type NotificationType =
     | 'review_rejected'
     | 'project_approval'
     | 'product_approval'
+    | 'order_delivered'
+    | 'order_ready'
+    | 'order_accepted'
     | 'inquiry';
 
 // Notification data structure

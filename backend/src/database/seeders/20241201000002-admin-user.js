@@ -1,9 +1,9 @@
 'use strict';
 
 // Password hash for: 12345678aA!
-const PASSWORD_HASH = '$2a$12$TI0PvVvXF.yhOP4bs/pPseGtmwPrMYc1RMRVPyj2IK76GGn0O9ZAla';
+const PASSWORD_HASH = '$2a$12$JeR.e6HPOyz/Wp20dRhaNOFUDuX4rx491DtPwmJIcj/PUixiGh68i';
 // Admin password hash (keep original: Admin@123!)
-const ADMIN_PASSWORD_HASH = '$2a$12$QIyz4CjP0jNQja9BONS8uOKXh6s8J40vq7dxtvO5OWQ8txpLc8t2S';
+const ADMIN_PASSWORD_HASH = '$2a$12$rTN6H24oDEvonv81ZRpRbe3ELC1NcbJYlXhDRF6EqLhyvth3t05f2';
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {

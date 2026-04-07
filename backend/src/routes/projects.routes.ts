@@ -8,6 +8,7 @@ import {
     updateProject,
     getProjectCities,
 } from '../controllers/projectController';
+import { getOwnerReports } from '../controllers/reports.controller';
 import { authenticate, projectOwnerOnly, optionalAuth } from '../middleware/auth';
 import { validate, projectValidations, commonValidations } from '../middleware/validate';
 import { upload, processProjectImage } from '../middleware/upload';
@@ -36,6 +37,13 @@ router.get(
 router.get('/cities', getProjectCities);
 
 // ==================== Protected Routes ====================
+
+/**
+ * @route   GET /projects/my-project/reports
+ * @desc    Get owner dashboard reports/analytics
+ * @access  Private (Project Owner)
+ */
+router.get('/my-project/reports', authenticate, getOwnerReports);
 
 /**
  * @route   GET /projects/my-project

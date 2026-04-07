@@ -103,23 +103,15 @@ export const createReview = async (req: Request, res: Response, next: NextFuncti
             });
         }
 
-        // Check if transaction is confirmed (either by both parties or auto-confirmed)
-        if (transaction.status !== 'confirmed') {
-            // Check if auto-confirm time has passed
-            if (transaction.status === 'pending' && new Date() >= transaction.autoConfirmAt) {
-                // Auto-confirm the transaction
-                transaction.status = 'confirmed';
-                await transaction.save();
-            } else {
-                return res.status(400).json({
-                    success: false,
-                    error: {
-                        code: 'NOT_CONFIRMED',
-                        message: 'Transaction must be confirmed before leaving a review',
-                        autoConfirmAt: transaction.autoConfirmAt,
-                    },
-                });
-            }
+        // Check if transaction is delivered
+        if (transaction.status !== 'delivered') {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: 'NOT_DELIVERED',
+                    message: 'Transaction must be delivered before leaving a review'
+                },
+            });
         }
 
         // Verify product matches transaction (if transaction has a product)

@@ -110,6 +110,7 @@ class ApiEndpoints {
   static String projectDetail(int id) => '/projects/$id';
   static String projectProducts(int id) => '/projects/$id/products';
   static const String myProject = '/projects/my-project';
+  static const String ownerReports = '/projects/my-project/reports';
   static const String projectCities = '/projects/cities';
 
   // Cart endpoints
@@ -126,7 +127,9 @@ class ApiEndpoints {
 
   // Transactions endpoints
   static const String transactions = '/transactions';
-  static String transactionConfirm(int id) => '/transactions/$id/confirm';
+  static String transactionAccept(int id) => '/transactions/$id/accept';
+  static String transactionDeliverable(int id) => '/transactions/$id/deliverable';
+  static String transactionReceive(int id) => '/transactions/$id/receive';
   static String transactionDispute(int id) => '/transactions/$id/dispute';
 
   // Reviews endpoints
