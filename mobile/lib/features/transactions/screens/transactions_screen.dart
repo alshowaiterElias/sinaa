@@ -29,47 +29,33 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(transactionsProvider);
-    final currentUserId = ref.watch(currentUserProvider)?.id;
+    final currentUser = ref.watch(currentUserProvider);
+    final currentUserId = currentUser?.id;
+    final isOwner = ref.watch(isProjectOwnerProvider);
     final isRtl = context.isRtl;
 
+    // Project owners get a tabbed view (Incoming / Outgoing)
+    if (isOwner) {
+      return _OwnerTabbedView(
+        state: state,
+        currentUserId: currentUserId,
+        isRtl: isRtl,
+        onRefresh: () async {
+          await ref
+              .read(transactionsProvider.notifier)
+              .loadTransactions(refresh: true);
+        },
+        onFilter: (status) {
+          ref.read(transactionsProvider.notifier).setStatusFilter(status);
+        },
+      );
+    }
+
+    // Regular customer — flat list
     return Scaffold(
       appBar: AppBar(
-        title: Text(isRtl ? 'طلبات التقييم' : 'Rating Requests'),
-        actions: [
-          PopupMenuButton<TransactionStatus?>(
-            icon: const Icon(Icons.filter_list),
-            onSelected: (status) {
-              print(status);
-              ref.read(transactionsProvider.notifier).setStatusFilter(status);
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: TransactionStatus.all,
-                child: Text(isRtl ? 'الكل' : 'All'),
-              ),
-              PopupMenuItem(
-                value: TransactionStatus.pending,
-                child: Text(isRtl ? 'قيد الانتظار' : 'Pending'),
-              ),
-              PopupMenuItem(
-                value: TransactionStatus.preparing,
-                child: Text(isRtl ? 'قيد التجهيز' : 'Preparing'),
-              ),
-              PopupMenuItem(
-                value: TransactionStatus.readyToDeliver,
-                child: Text(isRtl ? 'جاهز للتسليم' : 'Ready to Deliver'),
-              ),
-              PopupMenuItem(
-                value: TransactionStatus.delivered,
-                child: Text(isRtl ? 'تم التسليم' : 'Delivered'),
-              ),
-              PopupMenuItem(
-                value: TransactionStatus.cancelled,
-                child: Text(isRtl ? 'ملغي' : 'Cancelled'),
-              ),
-            ],
-          ),
-        ],
+        title: Text(isRtl ? 'الطلبات' : 'Orders'),
+        actions: [_buildFilterButton(isRtl)],
       ),
       body: RefreshIndicator(
         onRefresh: () async {
@@ -100,6 +86,41 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     );
   }
 
+  Widget _buildFilterButton(bool isRtl) {
+    return PopupMenuButton<TransactionStatus?>(
+      icon: const Icon(Icons.filter_list),
+      onSelected: (status) {
+        ref.read(transactionsProvider.notifier).setStatusFilter(status);
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: TransactionStatus.all,
+          child: Text(isRtl ? 'الكل' : 'All'),
+        ),
+        PopupMenuItem(
+          value: TransactionStatus.pending,
+          child: Text(isRtl ? 'قيد الانتظار' : 'Pending'),
+        ),
+        PopupMenuItem(
+          value: TransactionStatus.preparing,
+          child: Text(isRtl ? 'قيد التجهيز' : 'Preparing'),
+        ),
+        PopupMenuItem(
+          value: TransactionStatus.readyToDeliver,
+          child: Text(isRtl ? 'جاهز للتسليم' : 'Ready to Deliver'),
+        ),
+        PopupMenuItem(
+          value: TransactionStatus.delivered,
+          child: Text(isRtl ? 'تم التسليم' : 'Delivered'),
+        ),
+        PopupMenuItem(
+          value: TransactionStatus.cancelled,
+          child: Text(isRtl ? 'ملغي' : 'Cancelled'),
+        ),
+      ],
+    );
+  }
+
   Widget _buildEmptyState(bool isRtl) {
     return Center(
       child: Column(
@@ -112,7 +133,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            isRtl ? 'لا توجد طلبات تقييم' : 'No rating requests',
+            isRtl ? 'لا توجد طلبات' : 'No orders',
             style: TextStyle(
               fontSize: 18,
               color: Colors.grey[600],
@@ -121,8 +142,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           const SizedBox(height: 8),
           Text(
             isRtl
-                ? 'سيظهر هنا طلبات التقييم من المحادثات'
-                : 'Rating requests from conversations will appear here',
+                ? 'ستظهر هنا الطلبات من المحادثات'
+                : 'Orders from conversations will appear here',
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[500],
@@ -130,6 +151,206 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Tabbed view for project owners: Incoming (seller) / Outgoing (customer)
+class _OwnerTabbedView extends StatelessWidget {
+  final TransactionsState state;
+  final int? currentUserId;
+  final bool isRtl;
+  final Future<void> Function() onRefresh;
+  final void Function(TransactionStatus?) onFilter;
+
+  const _OwnerTabbedView({
+    required this.state,
+    required this.currentUserId,
+    required this.isRtl,
+    required this.onRefresh,
+    required this.onFilter,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Split transactions: incoming = user is seller, outgoing = user initiated
+    final incoming = <Transaction>[];
+    final outgoing = <Transaction>[];
+
+    for (final t in state.transactions) {
+      final isInitiator = t.initiatedBy == currentUserId;
+      if (isInitiator) {
+        outgoing.add(t);
+      } else {
+        incoming.add(t);
+      }
+    }
+
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(isRtl ? 'الطلبات' : 'Orders'),
+          actions: [
+            PopupMenuButton<TransactionStatus?>(
+              icon: const Icon(Icons.filter_list),
+              onSelected: onFilter,
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: TransactionStatus.all,
+                  child: Text(isRtl ? 'الكل' : 'All'),
+                ),
+                PopupMenuItem(
+                  value: TransactionStatus.pending,
+                  child: Text(isRtl ? 'قيد الانتظار' : 'Pending'),
+                ),
+                PopupMenuItem(
+                  value: TransactionStatus.preparing,
+                  child: Text(isRtl ? 'قيد التجهيز' : 'Preparing'),
+                ),
+                PopupMenuItem(
+                  value: TransactionStatus.readyToDeliver,
+                  child: Text(isRtl ? 'جاهز للتسليم' : 'Ready to Deliver'),
+                ),
+                PopupMenuItem(
+                  value: TransactionStatus.delivered,
+                  child: Text(isRtl ? 'تم التسليم' : 'Delivered'),
+                ),
+                PopupMenuItem(
+                  value: TransactionStatus.cancelled,
+                  child: Text(isRtl ? 'ملغي' : 'Cancelled'),
+                ),
+              ],
+            ),
+          ],
+          bottom: TabBar(
+            indicatorColor: AppColors.primary,
+            labelColor: AppColors.primary,
+            unselectedLabelColor: Colors.grey,
+            tabs: [
+              Tab(
+                icon: const Icon(Icons.call_received_rounded, size: 20),
+                text: isRtl
+                    ? 'واردة (${incoming.length})'
+                    : 'Incoming (${incoming.length})',
+              ),
+              Tab(
+                icon: const Icon(Icons.call_made_rounded, size: 20),
+                text: isRtl
+                    ? 'صادرة (${outgoing.length})'
+                    : 'Outgoing (${outgoing.length})',
+              ),
+            ],
+          ),
+        ),
+        body: state.isLoading && state.transactions.isEmpty
+            ? const Center(child: CircularProgressIndicator())
+            : TabBarView(
+                children: [
+                  // Incoming tab
+                  _TransactionList(
+                    transactions: incoming,
+                    isRtl: isRtl,
+                    currentUserId: currentUserId,
+                    onRefresh: onRefresh,
+                    emptyIcon: Icons.call_received_rounded,
+                    emptyTitle:
+                        isRtl ? 'لا توجد طلبات واردة' : 'No incoming orders',
+                    emptySubtitle: isRtl
+                        ? 'الطلبات التي يرسلها العملاء ستظهر هنا'
+                        : 'Orders from customers will appear here',
+                  ),
+                  // Outgoing tab
+                  _TransactionList(
+                    transactions: outgoing,
+                    isRtl: isRtl,
+                    currentUserId: currentUserId,
+                    onRefresh: onRefresh,
+                    emptyIcon: Icons.call_made_rounded,
+                    emptyTitle:
+                        isRtl ? 'لا توجد طلبات صادرة' : 'No outgoing orders',
+                    emptySubtitle: isRtl
+                        ? 'الطلبات التي ترسلها كعميل ستظهر هنا'
+                        : 'Orders you place as a customer will appear here',
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+/// Reusable transaction list with pull-to-refresh and empty state
+class _TransactionList extends StatelessWidget {
+  final List<Transaction> transactions;
+  final bool isRtl;
+  final int? currentUserId;
+  final Future<void> Function() onRefresh;
+  final IconData emptyIcon;
+  final String emptyTitle;
+  final String emptySubtitle;
+
+  const _TransactionList({
+    required this.transactions,
+    required this.isRtl,
+    required this.currentUserId,
+    required this.onRefresh,
+    required this.emptyIcon,
+    required this.emptyTitle,
+    required this.emptySubtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (transactions.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        child: ListView(
+          children: [
+            SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+            Center(
+              child: Column(
+                children: [
+                  Icon(emptyIcon, size: 80, color: Colors.grey[300]),
+                  const SizedBox(height: 16),
+                  Text(
+                    emptyTitle,
+                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Text(
+                      emptySubtitle,
+                      style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: transactions.length,
+        itemBuilder: (context, index) {
+          final transaction = transactions[index];
+          return _TransactionCard(
+            transaction: transaction,
+            isRtl: isRtl,
+            currentUserId: currentUserId,
+            onTap: () {
+              context.push('/transactions/${transaction.id}');
+            },
+          );
+        },
       ),
     );
   }

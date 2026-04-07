@@ -90,8 +90,7 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                       _MenuItem(
                         icon: Icons.star_rate_rounded,
-                        label:
-                            l10n.isRtl ? 'طلبات التقييم' : 'My Rating Requests',
+                        label: l10n.isRtl ? 'طلباتي' : 'My Orders',
                         onTap: () => context.push(Routes.transactions),
                       ),
                     ],
